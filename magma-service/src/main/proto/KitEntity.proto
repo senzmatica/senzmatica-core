@@ -1,0 +1,130 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.magma.core.grpc_service;
+import "PropertyEntity.proto";
+import "DeviceEntity.proto";
+import "ShiftEntity.proto";
+import "GeoEntity.proto";
+import "BatteryEntity.proto";
+import "GeoTypeEnum.proto";
+import "StatusEnum.proto";
+
+message Kit {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string kitModelId = 4;
+  KitModel model = 5; // KitModel
+  StringList devices = 6;
+  map<string, int32> deviceMap = 7;
+  map<string, Offset> offsetMap = 8;
+  map<int32, Property> propertyMap = 9;
+  map<int32, Shift> shiftMap = 10;
+  map<int32, Action> actionMap = 11;
+  Geo geo = 12;
+  Battery battery = 13;
+  bool maintain = 14;
+  int32 alertLevel = 15;
+  int32 interval = 16;
+  bool persistence = 17;
+  bool offline = 18;
+  int32 status = 19;
+  map<int32, bool> alerts = 20;
+  map<string, string> metaData = 21;
+  int32 inputMethod = 22;
+  string lastSeen = 23;
+  string creationDate = 24;
+}
+
+message KitModel {
+  string id = 1;
+  string name = 2;
+  int32 noOfSensors = 3;
+  int32 noOfActuators = 4;
+  bool batteryEnabled = 5;
+}
+
+message StringList {
+  repeated string str = 1;
+}
+
+message JsonObject {
+  string jsonString = 1;
+}
+
+message Offset {
+  int32 sensor = 1;
+  int32 actuator = 2;
+}
+
+message Action {
+  string id = 1;
+  string kitId = 2;
+  int32 number = 3;
+  string code = 4;  // need to get from actuator code Enum
+  string time = 5;
+  double value = 6;
+  string creationDate = 7;
+  string modifiedDate = 8;
+}
+
+message Offline{
+  string id = 1;
+  string kitId = 2;
+  string startTime = 3;
+  string endTime = 4;
+  string creationDate = 5;
+  string modifiedDate = 6;
+}
+
+message AlertLimit {
+  string id = 1; // Assuming you want to include id in the message
+  string kitId = 2;
+  int32 propertyNumber = 3;
+  string code = 4;
+  int32 level = 5;
+  double low = 6;
+  double high = 7;
+  int32 currentLevelPeriod = 8;
+  int32 nextLevelPeriod = 9;
+  string persistence = 10;
+  string creationDate = 11;
+  string modifiedDate = 12;
+}
+
+message Alert {
+  string id = 1;
+  AlertLimit alertLimit = 2;
+  bool dueToPrevious = 3;
+  bool alertSent = 4;
+  string startTime = 5;
+  string endTime = 6;
+  string creationDate = 7;
+  string modifiedDate = 8;
+}
+
+message Error {
+  string id = 1;
+  string kitId = 2;
+  int32 propertyNumber = 3;
+  string startTime = 4;
+  string endTime = 5;
+  string creationDate = 6;
+  string modifiedDate = 7;
+}
+
+
+
+
+
+
+
+message DataInputMethod {
+  enum DataInputMethodEnum {
+    NONE = 0;
+    DEVICE = 1;
+    MANUAL = 2;
+    IMAGE = 3;
+  }
+  DataInputMethodEnum dataInputMethod = 1;
+}

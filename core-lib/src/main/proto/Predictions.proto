@@ -1,0 +1,59 @@
+syntax = "proto3";
+option java_package = "com.magma.core.grpc";
+option java_multiple_files = true;
+
+
+message Sensors{
+  float moisture = 1;
+  float soiltemperature = 2;
+  float conductivity = 3;
+  string soiltype = 4;
+  string identifier = 5;
+}
+
+message Properties{
+  float property = 1;
+}
+
+message SensorPredict{
+  float value = 1;
+  int64 date = 2;
+  int32 number = 3;
+}
+
+message PredictionInput {
+  repeated SensorPredict sensors = 1;
+  string model = 2;
+}
+
+message PredictionInputs {
+  repeated PredictionInput inputs = 1;
+}
+
+message PredictionOutput {
+  float value = 1;
+  int64 date = 2;
+}
+
+message PredictionOutputs {
+  repeated PredictionOutput outputs = 1;
+}
+
+message RegressionInput {
+  repeated float points = 1;
+  int32 predict = 2;
+  int32 deg = 3;
+}
+
+message RegressionOutput {
+  repeated float trained = 1;
+  repeated float predicted = 2;
+}
+
+service PredictConnector {
+  rpc predict(PredictionInput) returns (PredictionOutput);
+  rpc predictList(PredictionInputs) returns (PredictionOutputs);
+  rpc predictMoisture(Sensors) returns (Properties);
+  rpc predictConductivity(Sensors) returns (Properties);
+  rpc doRegression(RegressionInput) returns (RegressionOutput);
+}

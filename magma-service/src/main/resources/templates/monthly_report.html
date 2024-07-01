@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Document</title>
+    <!-- Fontawesome -->
+    <script src="https://use.fontawesome.com/releases/v5.13.0/js/all.js"></script>
+
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins');
+    </style>
+
+</head>
+<body style="margin: 0;padding: 0; background-color: #F5F5F5;">
+<div style="background-color: #22C674;
+            height: 200px;
+            padding: 100px 50px;
+            height: 100px;">
+    <div style=" background-color: #fff;
+            margin: 0 20px 50px;
+            width: auto;
+            height: auto;
+            margin-bottom: 100px;">
+        <h1 style="font: normal normal bold 60px/90px Poppins;  text-align: center; color: #22C674; margin: 0px; padding-top: 20px;"
+            class="senzagro">SenzAgro</h1>
+        <h3 style="font: normal normal 600 32px/65px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;" th:text="'Monthly Update - '+${month}">Monthly Update.</h3>
+        <h3 style="font: normal normal 600 32px/65px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;" th:text="${farm.name}">Farm Name.</h3>
+        <h1 style="padding-top: 20px !important;
+            font: normal normal normal 32px/48px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;"> Irrigation summary.</h1>
+
+        <div style="padding: 50px">
+            <table style="margin-top: 50px; width: 100%;">
+                <tr>
+
+                    <td style="width: 100px">
+                        <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/water.png" alt=""
+                                                       style="padding-top: 10px;"/></div>
+                    </td>
+                    <td style="width: 500px"><p style="margin-bottom: 0; color: #354052;
+            font: normal normal normal 24px/36px Poppins;;  padding-left: 20px;">Total Watering Time</p>
+                        <p style="margin-top: 0; font: normal normal 600 30px/45px Poppins;
+            color: #0069AA;  padding-left: 20px;" th:text="${irrigationSummary.durationCurrent} +' Mins'">0 Mins</p>
+                    </td>
+
+
+                    <td style="width: 100px">
+                        <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/Increase.png" alt=""
+                                                       style="padding-top: 10px;"/></div>
+                    </td>
+                    <td><p style="margin-bottom: 0; color: #354052;
+            font: normal normal normal 24px/36px Poppins;;  padding-left: 20px;">Compared with previous month</p>
+                        <p style="margin-top: 0; font: normal normal 600 30px/45px Poppins;
+                                                    color: #0069AA;  padding-left: 20px;"
+                           th:text="${irrigationSummary.deltaString} +' %'">0 %</p></td>
+                </tr>
+
+                <tr>
+                </tr>
+
+
+            </table>
+            <p style="text-align: right; padding-bottom:20px;">
+                <a th:href="${appUrl}+'/'+${farm.id}+'/report'" style="font: normal normal 300 24px/25px Poppins;
+                                                                        color: #707070;
+                                                                        margin-right: 50px;
+                                                                        text-decoration: none;
+                                                                    "> more details > </a>
+            </p>
+
+        </div>
+    </div>
+</div>
+
+
+<div style="background-color: #fff;
+            margin: 517px 70px 50px;">
+
+    <p style="padding-top: 20px !important;
+            font: normal normal normal 32px/48px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;">Income Summary</p>
+    <div style="padding: 50px">
+        <table style="margin-top: 50px; width: 100%;">
+            <tr>
+
+                <td style="width: 100px">
+                    <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/yield.png" height="100"
+                                                       width="100"
+                                                       alt="senzagro" title="senzagro" style="display:block"
+                                                       class="img-icon-yield"/></div>
+                </td>
+                <td style="width: 500px"><p style="margin-bottom: 0; padding-left: 20px;color: #354052;
+                 font: normal normal normal 24px/36px Poppins;">Total Income</p>
+                    <p style="margin-top: 0;font: normal normal 600 30px/45px Poppins;
+            color: #0069AA; padding-left: 20px;" th:text="'LKR '+ ${incomeSummary.totalCashFlow}">LKR. 20.000</p></td>
+
+
+                <td style="width: 100px">
+                    <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/Increase.png" alt=""
+                                                       style="padding-top: 10px;"/></div>
+                </td>
+                <td><p style=" margin-bottom: 0; padding-left: 20px;color: #354052;
+             font: normal normal normal 24px
+        /36px Poppins;">Compared with previous month</p>
+                    <p style=" margin-top: 0; font: normal normal 600 30px/45px Poppins;
+            color: #0069AA; padding-left: 20px;" th:text="${incomeSummary.delta} +'%'">+30%</p></td>
+            </tr>
+
+            <tr>
+            </tr>
+        </table>
+    </div>
+
+
+</div>
+
+<!--    <p style="text-align: right; padding-bottom:20px;">-->
+<!--            <a href="" class="more-details" > more details > </a>-->
+<!--        </p>-->
+
+
+<div style="background-color: #fff;
+            margin: 50px 70px 70px 50px;">
+
+    <p style="padding-top: 20px !important;
+            font: normal normal normal 32px/48px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;">Expense Summary</p>
+
+    <div style="padding: 50px">
+        <table style="margin-top: 50px; width: 100%;">
+            <tr>
+
+                <td style="width: 100px">
+                    <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/yield.png" height="100"
+                                                       width="100"
+                                                       alt="senzagro" title="senzagro" style="display:block"
+                                                       class="img-icon-yield"/></div>
+                </td>
+                <td style="width: 500px"><p style=" margin-bottom: 0; padding-left: 20px; color: #354052;
+                 font: normal normal normal 24px
+            /36px Poppins;">Total Expense</p>
+                    <p style="margin-top: 0; font: normal normal 600 30px/45px Poppins;
+            color: #0069AA; padding-left: 20px;" th:text="'LKR '+ ${expenseSummary.totalCashFlow}">LKR. 20.000</p></td>
+
+
+                <td style="width: 100px">
+                    <div style="height: 100px;
+                             width: 100px;
+                             border-radius: 50%;
+                             background-color:  #F5F5F5;
+                             text-align: center;"><img src="https://agro.senzmate.com/images/Increase.png" alt=""
+                                                       style="padding-top: 10px;"/></div>
+                </td>
+                <td><p style=" margin-bottom: 0; padding-left: 20px;color: #354052;
+             font: normal normal normal 24px/36px Poppins;">Compared with previous month</p>
+                    <p style=" margin-top: 0; font: normal normal 600 30px/45px Poppins;
+            color: #0069AA; padding-left: 20px;" th:text="${expenseSummary.delta} + ' %'">+30%</p></td>
+            </tr>
+
+            <tr>
+            </tr>
+        </table>
+    </div>
+</div>
+
+
+<div class="container" style=";  background-color: #fff;
+            margin: 50px 70px;">
+    <table style="height: auto;
+            width: 770px;
+            margin: auto;
+            padding: 50px;
+            display:block;">
+        <tr style="display: block">
+
+            <!--            LOOP THIS TABLE DATA-->
+            <td style="display:inline-block;" th:each="aggregation : ${irrigationAggregation}">
+                <div style="background-color: #1155CC;  height: 88px;
+            width: 88px;">
+                    <div style=" display: flex;
+            flex-direction: row;">
+                <span style=" color: #B1B1B1; font: normal normal bold 16px/25px Poppins;padding: 4px 0 0 5px;"
+                      th:text="${aggregationStat.index + 1}">1</span>
+                        <img alt="weather" src="https://agro.senzmate.com/images/sunset.png" style="height: 33px;
+            width: 33px;
+            margin-left: auto;
+            padding: 2px 5px 0 0;"/>
+                    </div>
+                    <p style=" text-align: center;
+            color: #fff;
+            font: normal normal 600 16px/25px Poppins;" th:text="${aggregation.getDuration()} + 'L'">16L</p>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+
+<img src="cid:kitChart" alt="kitReport" style="height: 400px; width: 400px; margin-left: auto; padding: 2px 5px 0 0;"/>
+<img src="cid:kitChart" alt="kitReport" style="height: 400px; width: 400px; margin-left: auto; padding: 2px 5px 0 0;"/>
+
+
+<footer style="text-align: center; color: #354052;">
+
+    <a href="#"><i class="fab fa-facebook-f fa-2x" style="margin: 10px;
+            color: #354052;
+        "></i></a>
+    <a href="#"><i class="fab fa-twitter fa-2x" style="margin: 10px;
+            color: #354052;
+        "></i></a>
+    <a href="#"><i class="fab fa-instagram fa-2x" style="margin: 10px;
+            color: #354052;
+        "></i></a>
+
+    <p class="footer-text" style="font: normal normal 300 16px/25px Poppins;color: #707070;">© Copyrights 2020 SenzAgro
+        Pvt Ltd.. All Rights Reserved.</p>
+    <p class="footer-text" style="color: #354052; font: normal normal 600 16px/25px Poppins;">www.senzagro.com | +94
+        114248299</p>
+
+
+</footer>
+
+
+</body>
+</html>

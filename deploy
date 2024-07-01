@@ -1,0 +1,28 @@
+ cd /home/azureuser/apps/magma-core
+ git pull
+ mvn clean install
+
+
+ cd ../magma-senzagro
+
+ git checkout master
+ git pull
+ cp ../magma-core/service/target/*.jar lib/
+ git commit -am"Core updated: JK"
+ git push origin master
+
+
+ git checkout merge
+ git pull
+ cp ../magma-core/service/target/*.jar lib/
+ git commit -am"Core updated: JK"
+ git push origin merge
+
+
+ cd ../magma-safe-press
+
+ git checkout master
+ git pull
+ cp ../magma-core/service/target/*.jar lib/
+ git commit -am"Core updated: JK"
+ git push origin master

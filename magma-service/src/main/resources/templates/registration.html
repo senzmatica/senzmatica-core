@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head lang="en">
+    <meta charset="UTF-8"/>
+    <title>Email Template</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed" rel="stylesheet"/>
+</head>
+<body style="font-family: 'Roboto Condensed', sans-serif;">
+<div style="text-align: center; max-width: 770px; margin: 0 auto; top: 0; background-color: #fff;">
+    <div style="background-color: #455A64; color: #fff; padding: 5px 10px; width: 100%">
+        <span th:if="${logoUrl}">
+                    <img alt="logo" style="max-width:150px;width: 150px;margin: 0 auto;" th:src="${logoUrl}"/>
+        </span>
+        <span th:unless="${logoUrl}">
+            <div style="font-size: 45px; font-weight: 700">SenzAgro</div>
+            <div style="font-size: 14px; margin-top: -1px">Powered by SenzMate</div>
+        </span>
+    </div>
+    <div style="padding: 40px 10px; width: 100%; color: #444">
+        <div style="font-size: 25px;">User Registration</div>
+        <div style="font-size: 15px; margin: 20px auto; max-width: 700px">
+            Welcome to <span th:text="${appName} ? ${appName} : 'SenzAgro'">SenzAgro</span>. Click the link below to
+            register.
+            This link is only valid for one day.
+        </div>
+        <a th:href="${link}" th:target="_blank"
+           style="font-size: 14px; text-decoration:none; padding: 10px 15px; background-color: #78909C; border: none; color: #fff; cursor: pointer">
+            Register
+        </a>
+        <div style="font-size: 15px; margin-top: 20px">Thank you</div>
+    </div>
+    <div style="background-color: #546E7A; color: #fff; padding: 20px 10px; width: 100%">
+        <div style="font-size: 15px;"
+             th:text="${aboutText} ? ${aboutText} : 'SenzAgro - A complete approach to Plantation management'">SenzAgro
+            - A complete approach to Plantation management
+        </div>
+        <a style="color: #ddd; font-size: 12px; text-decoration: none"
+           th:href="${aboutUrl} ? ${aboutUrl} : 'https://www.senzmate.com/senzagro'" target="_blank">Learn More...</a>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" th:inline="javascript">
+        google.charts.load('current', {'packages': ['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Employee Name');
+            data.addColumn('number', 'low1');
+            data.addColumn('number', 'low2');
+            data.addColumn('number', 'high1');
+            data.addColumn('number', 'high2');
+            data.addRows([[${rows}]]);
+
+            var options = {
+                legend: 'none',
+                bar: {groupWidth: '10%'},
+                candlestick: {
+                    fallingColor: {strokeWidth: 0, fill: '#a52714'},
+                    risingColor: {strokeWidth: 0, fill: '#0f9d58', stroke: '#000000'},
+                    colors: ['red'],
+                    hAxis: {title: "Days in month"},
+                    vAxis: {title: "Temperature Reading"},
+                }
+            };
+
+            var chartDiv = document.getElementById('chartDiv');
+            var my_chart = new google.visualization.CandlestickChart(chartDiv);
+
+            google.visualization.events.addListener(my_chart, 'ready', function () {
+                chartDiv.innerHTML = '<img alt="chart" id="kitChart" src="' + my_chart.getImageURI() + '" />';
+            });
+
+            my_chart.draw(data, options);
+        }
+    </script>
+</head>
+<body>
+<div id="chartDiv" style="width: 900px; height: 500px;"></div>
+</body>
+</html>

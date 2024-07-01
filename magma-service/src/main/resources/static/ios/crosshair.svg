@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+    <defs>
+        <style>.a{fill:none;stroke:#757575;stroke-linecap:round;stroke-linejoin:round;stroke-width:2px;}</style>
+    </defs>
+    <g transform="translate(-1 -1)">
+        <circle class="a" cx="7" cy="7" r="7" transform="translate(2 2)"/>
+        <line class="a" x1="4" transform="translate(12 9)"/>
+        <line class="a" x1="4" transform="translate(2 9)"/>
+        <line class="a" y1="4" transform="translate(9 2)"/>
+        <line class="a" y1="4" transform="translate(9 12)"/>
+    </g>
+</svg>

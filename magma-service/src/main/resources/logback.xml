@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOGS" value="./"/>
+    <property name="SERVICE_NAME" value="core"/>
+
+    <appender name="Console"
+              class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{yyyy-MM-dd HH:mm:ss} - %C{1.} - %line %m%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <appender name="RollingFile"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!--        <file>${LOGS}/spring-boot-logger.log</file>-->
+        <file>${LOGS}/${SERVICE_NAME}.log</file>
+        <encoder
+                class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d{yyyy-MM-dd HH:mm:ss} - %C{1.} - %line %m%n</Pattern>
+        </encoder>
+
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily and when the file reaches 10 MegaBytes -->
+            <fileNamePattern>${LOGS}/archived/${SERVICE_NAME}-%d{yyyy-MM-dd}.%i.log
+            </fileNamePattern>
+            <maxHistory>7</maxHistory>
+
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="RollingFileZip"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder
+                class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <Pattern>%d %p %C{1.} %line %m%n</Pattern>
+        </encoder>
+
+
+        <rollingPolicy
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--rollover weekly and zip -->
+            <fileNamePattern>${LOGS}/archived/${SERVICE_NAME}-zip-%d{yyyy-ww}.%i.gz
+            </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1000MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+
+    <!-- LOG everything at INFO level -->
+    <root level="info" additivity="false">
+        <appender-ref ref="RollingFileZip"/>
+        <appender-ref ref="RollingFile"/>
+        <appender-ref ref="Console"/>
+    </root>
+
+    <logger name="org.springframework.web" level="error" additivity="false">
+        <appender-ref ref="RollingFileZip"/>
+        <appender-ref ref="RollingFile"/>
+        <appender-ref ref="Console"/>
+    </logger>
+
+    <logger name="com.magma.ums" level="info" additivity="false">
+        <appender-ref ref="RollingFileZip"/>
+        <appender-ref ref="RollingFile"/>
+        <appender-ref ref="Console"/>
+    </logger>
+
+    <logger name="com.magma" level="debug" additivity="false">
+        <appender-ref ref="RollingFileZip"/>
+        <appender-ref ref="RollingFile"/>
+        <appender-ref ref="Console"/>
+    </logger>
+
+</configuration>

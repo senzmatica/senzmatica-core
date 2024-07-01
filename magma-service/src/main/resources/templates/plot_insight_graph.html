@@ -1,0 +1,82 @@
+<html>
+<head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" th:inline="javascript">
+        google.charts.load('current', {'packages': ['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Plot');
+            data.addColumn('number', 'low1');
+            data.addColumn('number', 'low2');
+            data.addColumn('number', 'high1');
+            data.addColumn('number', 'high2');
+            data.addRows([[${tempRows}]]);
+
+            var options = {
+                legend: 'none',
+                bar: {groupWidth: '40%'},   // Remove space between bars.
+                candlestick: {
+                    fallingColor: {strokeWidth: 0, fill: '#707070'}, // red
+                    risingColor: {strokeWidth: 0, fill: '#5fe7a3'}   // green
+                },
+                colors: ['#AEAEAE'],
+                hAxis: {title: "Plots"},
+                vAxis: {title: [[${yAxisNameFirstGraph}]], viewWindowzmode: 'maximized'}
+            };
+
+            var chartDiv1 = document.getElementById('temp_Div');
+            var my_chart1 = new google.visualization.CandlestickChart(chartDiv1);
+
+            google.visualization.events.addListener(my_chart1, 'ready', function () {
+                chartDiv1.innerHTML = '<img  alt="chart" id="kitTempChart" src="' + my_chart1.getImageURI() + '" />';
+            });
+
+            my_chart1.draw(data, options);
+        }
+    </script>
+    <script type="text/javascript" th:inline="javascript">
+        google.charts.load('current', {'packages': ['corechart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'Plot');
+            data.addColumn('number', 'low1');
+            data.addColumn('number', 'low2');
+            data.addColumn('number', 'high1');
+            data.addColumn('number', 'high2');
+            data.addRows([[${humRows}]]);
+
+
+            var options = {
+                legend: 'none',
+                bar: {groupWidth: '40%'},   // Remove space between bars.
+                candlestick: {
+                    fallingColor: {strokeWidth: 0, fill: '#707070'}, // red
+                    risingColor: {strokeWidth: 0, fill: '#3C78D8'}
+                },
+                colors: ['#AEAEAE'],
+                hAxis: {title: "Plots"},
+                vAxis: {title: [[${yAxisNameSecondGraph}]], viewWindowzmode: 'maximized'}
+            };
+
+            var chartDiv2 = document.getElementById('hum_chart');
+            var my_chart2 = new google.visualization.CandlestickChart(chartDiv2);
+
+            google.visualization.events.addListener(my_chart2, 'ready', function () {
+                chartDiv2.innerHTML = '<img alt="chart" id="kitHumChart" src="' + my_chart2.getImageURI() + '" />';
+            });
+
+            my_chart2.draw(data, options);
+        }
+    </script>
+</head>
+<body>
+<div id="temp_Div" style="width: 900px; height: 500px;"></div>
+<div id="hum_chart" style="width: 900px; height: 500px;"></div>
+</body>
+</html>

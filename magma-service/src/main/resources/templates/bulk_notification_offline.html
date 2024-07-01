@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head lang="en">
+    <meta charset="UTF-8"/>
+    <title>Device Notification Alert</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed" rel="stylesheet"/>
+</head>
+<body style="font-family: 'Roboto Condensed', sans-serif;">
+<div style="text-align: center; max-width: 770px; margin: 0 auto; top: 0; background-color: #fff;">
+    <div style="background-color: #455A64; color: #fff; padding: 5px 10px; width: 100%">
+        <img th:if="${logoUrl}" alt="logo" style="max-width:150px;width: 150px;margin: 0 auto;" th:src="${logoUrl}"/>
+        <div th:unless="${logoUrl}" style="font-size: 45px; font-weight: 700">SenzAgro</div>
+        <div th:unless="${logoUrl}" style="font-size: 14px; margin-top: -7px">Powered by Senzmate</div>
+    </div>
+    <div style="padding: 40px 10px; width: 100%; color: #444">
+        <div style="font-size: 25px;">Offline Kit Summary</div>
+        <div style="font-size: 15px; margin: 20px auto; max-width: 600px">
+
+
+            <table style="width:100%">
+                <tr>
+                    <th>Kit Id</th>
+                    <th>From</th>
+                    <th>To</th>
+                </tr>
+                <tr th:each="device: ${devices}">
+                    <td th:text="${device.kitId}"/>
+                    <td th:text="${device.startTime}"/>
+                    <td th:text="${device.endTime}"/>
+                </tr>
+            </table>
+        </div>
+        <div style="font-size: 15px; margin-top: 20px">Thank you</div>
+    </div>
+    <div style="background-color: #546E7A; color: #fff; padding: 20px 10px; width: 100%">
+        <div style="font-size: 15px;"
+             th:text="${aboutText} ? ${aboutText} : 'SenzAgro - A complete approach to Plantation management'">SenzAgro
+            - A complete
+            approach to Plantation management
+        </div>
+        <a style="color: #ddd; font-size: 12px; text-decoration: none"
+           th:href="${aboutUrl} ? ${aboutUrl} : 'https://www.senzmate.com/senzagro'" target="_blank">Learn More...</a>
+    </div>
+</div>
+</body>
+</html>

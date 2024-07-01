@@ -1,0 +1,13 @@
+smart_farm:
+  plot:
+    irrigation: [ READ,WRITE ]
+    sensors:
+    report:
+    settings:
+    devices:
+  irrigation:
+  reports:
+  settings:
+cash_flow:
+  crop:
+daily_update:

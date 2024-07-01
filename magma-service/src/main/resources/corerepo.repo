@@ -1,0 +1,5 @@
+[corerepo]
+name=Magma core
+baseurl=file:///var/www/html/corerepo/
+enabled=1
+gpgcheck=0

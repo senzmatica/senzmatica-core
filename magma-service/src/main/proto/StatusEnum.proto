@@ -1,0 +1,16 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.magma.core.grpc_service;
+
+message Status {
+  enum StatusEnum {
+    NONE = 0;
+    INITIAL = 1;    // INITIAL
+    ACTIVE = 2;     // ACTIVE
+    SUSPENDED = 3;  // SUSPENDED
+    EXPIRED = 4;    // EXPIRED
+    USED = 5;       // USED
+    CANCELED = 6;   // CANCELED
+  }
+  StatusEnum status = 1;
+}

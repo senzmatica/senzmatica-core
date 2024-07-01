@@ -1,0 +1,510 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Document</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400&amp;display=swap" rel="stylesheet"/>
+
+</head>
+<script src="https://use.fontawesome.com/releases/v5.13.0/js/all.js"></script>
+<body style="margin: 0; background: #F5F5F5 0% 0% no-repeat padding-box;">
+<div style="height: 100px;
+                    background: #FFFFFF 0% 0% no-repeat padding-box;
+                    box-shadow: 0px 3px 6px #00000029;
+            ">
+    <table style="width: 100%">
+        <tr>
+            <td style="text-align: center">
+                <img alt="logo" src="https://agri.senzmate.com/static/media/SAlogo.d7e5ffbf.png" width="200px"
+                     class="img"/>
+            </td>
+            <td>
+                <h4 style=" font: normal normal 600 24px/35px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #707070;
+                                    text-transform: uppercase;
+                                    margin: 0 0 0 125px;
+                                    display: inline;">Monthly INSIGHT REPORT</h4>
+            </td>
+            <td>
+                <div style="width: 48px;
+                                    height: 90px;
+                                    background: #22C674 0% 0% no-repeat padding-box;
+                                    box-shadow: 0px 3px 6px #00000029;
+                                    border-radius: 0 0 28px 28px;
+                                    margin: -3px 0;">
+                    <h4 style="padding-top: 8px;
+                                    letter-spacing: 2.34px;
+                                    text-transform: uppercase;
+                                    font-size: 30px;
+                                    margin-left: 3px;
+                                    color: #FFFFFF;
+                                    writing-mode: vertical-rl;" th:text="${month}">FEB</h4>
+                    <!--                            <h4 style=" transform: matrix(0, -1, 1, 0, 0, 0);-->
+                    <!--                                        text-align: left;-->
+                    <!--                                        font: normal normal 600 32px/67px Poppins;-->
+                    <!--                                        letter-spacing: 2.34px;-->
+                    <!--                                        color: #FFFFFF;-->
+                    <!--                                        padding: 15px 0;" th:text="${month}">FEB</h4>-->
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+<div style="padding: 25px;
+                    margin: 25px;
+                    background: #FFFFFF 0% 0% no-repeat padding-box;">
+    <table style="">
+        <tr>
+            <td>
+                <table style="height: auto;
+            width: 675px;
+            display:block;">
+                    <tr style="display: block">
+
+                        <!--            LOOP THIS TABLE DATA-->
+                        <td style="display:inline-block;" th:each="aggregation : ${irrigationAggregation}">
+                            <div th:style="${aggregation.getColorMoisture()}">
+                                <div style=" display: flex;
+            flex-direction: row;">
+                                    <span style=" color: #B1B1B1; font: normal normal bold 16px/25px Poppins;padding: 4px 0 0 5px;"
+                                          th:text="${aggregationStat.index + 1}">1</span>
+                                    <img alt="weatherIcon" th:src="${aggregation.getWeatherIcon()}" style="height: 33px;
+            width: 33px;
+            margin-left: auto;
+            padding: 2px 5px 0 0;"/>
+                                </div>
+                                <p style=" text-align: center;
+            color: #fff;
+            font: normal normal 600 16px/25px Poppins;" th:text="${aggregation.getDuration()} + ' Min'">16Min</p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px">
+                    <table>
+                        <tr>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">*** MIN - Daily Irrigation duration in minutes</span>
+
+                            </td>
+                        </tr>
+                    </table>
+
+
+                </div>
+            </td>
+            <td style="vertical-align: baseline;">
+                    <span style="text-align: left;
+                                font: normal normal normal 14px/21px Poppins;
+                                letter-spacing: 0px;
+                                color: #000000;" th:text="${suggestionMoisture}">
+                        Suggestion
+                    </span>
+                <h4 style="font: normal normal 600 16px/25px Poppins;
+                                letter-spacing: 0px;
+                                color: #444444;">
+                    Soil Moisture Level
+                </h4>
+
+                <div>
+                    <table>
+                        <tr>
+                            <td>
+                                <div style="width: 16px;
+                                        height: 16px;
+                                        transform: matrix(0, 1, -1, 0, 0, 0);
+                                        background: #2196F3 0% 0% no-repeat padding-box;">
+
+                                </div>
+                            </td>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">00-19%</span>
+
+                            </td>
+                        </tr>
+                    </table>
+                    <table>
+                        <tr>
+                            <td>
+                                <div style="width: 16px;
+                                        height: 16px;
+                                        transform: matrix(0, 1, -1, 0, 0, 0);
+                                        background: #3D85C6 0% 0% no-repeat padding-box;">
+
+                                </div>
+                            </td>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">20-39%</span>
+
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table>
+                        <tr>
+                            <td>
+                                <div style="width: 16px;
+                                        height: 16px;
+                                        transform: matrix(0, 1, -1, 0, 0, 0);
+                                       background: #6DA2D2 0% 0% no-repeat padding-box;">
+
+                                </div>
+                            </td>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">40-59%</span>
+
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table>
+                        <tr>
+                            <td>
+                                <div style="width: 16px;
+                                        height: 16px;
+                                        transform: matrix(0, 1, -1, 0, 0, 0);
+                                        background: #B1F4F9 0% 0% no-repeat padding-box;">
+
+                                </div>
+                            </td>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">60-79%</span>
+
+                            </td>
+                        </tr>
+                    </table>
+                    <table>
+                        <tr>
+                            <td>
+                                <div style="width: 16px;
+                                        height: 16px;
+                                        transform: matrix(0, 1, -1, 0, 0, 0);
+                                        background: #000 0% 0% no-repeat padding-box;">
+
+                                </div>
+                            </td>
+                            <td>
+                                     <span style="text-align: center;
+                                        font: normal normal normal 12px/18px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #444444;">80-99%</span>
+
+                            </td>
+                        </tr>
+                    </table>
+
+                </div>
+
+
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="margin: 25px; padding: 25px; background-color: #FFFFFF">
+    <img src="cid:kitTempChart" alt="kitTempChart"/>
+</div>
+<div style="margin: 25px; padding: 25px; background-color: #FFFFFF">
+    <img src="cid:kitHumChart" alt="kitHumChart"/>
+</div>
+
+<table style="width: 100%">
+    <tr>
+        <td style="width: 35%">
+            <div style="margin: 25px; padding: 25px; background-color: #FFFFFF; height: 172px">
+                <p style="text-align: center;font: normal normal  20px/30px Poppins;
+                        letter-spacing: 0px;
+                        color: #354052; font-weight: 600;">Alert summary</p>
+                <table style="margin-top: 35px">
+                    <tr>
+                        <td>
+                            <div style="width: 56px;
+                        height: 56px;
+                        background: #5D5D5D0A 0% 0% no-repeat padding-box;
+                        border-radius: 100px; margin-right: 30px">
+                                <!--                    image Here-->
+                                <img alt="alert" src="https://agro.senzmate.com/images/Alert24.png" width="20px"
+                                     style="padding: 17px 18px;"/>
+                            </div>
+                        </td>
+                        <td style="margin-left: 30px">
+                            <p style="text-align: left;
+                                    font: normal normal normal 16px/36px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #354052;
+                                    margin-bottom: 0;">Total Alert Sent</p>
+                            <p style="font: normal normal 600 20px/45px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #0069AA;
+                                    margin-top: 0;
+line-height: 22px" th:text="${noOfAlert}">60</p>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+        <td>
+            <div style="margin: 25px; padding: 25px; background-color: #FFFFFF">
+                <p style="text-align: center; font: normal normal  20px/30px Poppins;
+                    letter-spacing: 0px;
+                    color: #354052; font-weight: 600">Task summary</p>
+                <table width="100%">
+                    <tr>
+                        <td width="10%">
+                            <div style="width: 56px;
+                        height: 56px;
+                        background: #5D5D5D0A 0% 0% no-repeat padding-box;
+                        border-radius: 100px;">
+                                <!--                            imge here-->
+                                <img alt="file" src="https://agro.senzmate.com/images/file-text.png"
+                                     style="padding: 17px 18px;"
+                                     width="20px"/>
+                            </div>
+                        </td>
+                        <td style="">
+                            <p style="text-align: left;
+                                    font: normal normal normal 16px/36px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #354052;
+                                    margin-bottom: 0;
+                        ">Total Tasks Assigned</p>
+                            <p style="font: normal normal 600 20px/45px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #0069AA;
+                                    margin-top: 0;
+line-height: 22px" th:text="${taskSum.get('taskTotal')}">60</p>
+                        </td>
+                        <td>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <p style="font: normal normal normal 16px/36px Poppins;
+                                            letter-spacing: 0px;
+                                            color: #354052;
+                                            margin: 0"> Completed</p>
+                                    </td>
+                                    <td>
+                                        <p style="font: normal normal 600 16px/45px Poppins;
+                                            letter-spacing: 0px;
+                                            color: #22C674;
+                                            margin: 0; padding-left: 20px" th:text="${taskSum.get('taskDone')}">50</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <p style="font: normal normal normal 16px/36px Poppins;
+                                            letter-spacing: 0px;
+                                            color: #354052; margin: 0;"> Pending</p>
+                                    </td>
+                                    <td>
+                                        <p style="font: normal normal 600 16px/45px Poppins;
+                                            letter-spacing: 0px;
+                                            color:  #F86B6B; margin: 0; padding-left: 20px"
+                                           th:text="${taskSum.get('taskPending')}">30</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div style="margin: 25px; padding: 25px; background-color: #FFFFFF; text-align: center">
+    <p style="text-align: center;
+        font: normal normal 20px/30px Poppins;
+        letter-spacing: 0px;
+        color: #354052;
+        font-weight: 600;">Cash flow summary</p>
+    <table width="100%" style="text-align: center">
+        <tr>
+            <td style="font: normal normal  14px/21px Poppins;
+                    letter-spacing: 0px;
+                    color: #3F4451;
+                    font-weight: 600;
+                    ">Item
+            </td>
+            <td style="font: normal normal  14px/21px Poppins;
+                    letter-spacing: 0px;
+                    color: #3F4451;
+                    font-weight: 600;
+                    ">Type
+            </td>
+            <td style="font: normal normal  14px/21px Poppins;
+                    letter-spacing: 0px;
+                    color: #3F4451;
+                    font-weight: 600;
+                    ">Income
+            </td>
+            <td style="font: normal normal  14px/21px Poppins;
+                    letter-spacing: 0px;
+                    color: #3F4451;
+                    font-weight: 600;
+                    ">Expense
+            </td>
+
+        </tr>
+        <tr style=" height: 40px" th:each="item : ${cashFlowSummary.getSummaries()}">
+            <td style="font: normal normal 14px/21px Poppins;
+                        letter-spacing: 0px;
+                        color: #4E5983;" th:text="${item.getNameSummary()}">
+                Coconut
+            </td>
+            <td style="font: normal normal 14px/21px Poppins;
+                        letter-spacing: 0px;
+                        color: #4E5983;" th:text="${item.getType()}">
+                Income
+            </td>
+            <td style="font: normal normal 14px/21px Poppins;
+                        letter-spacing: 0px;
+                        color: #4E5983;" th:text="${item.getIncome()}">
+                25000
+            </td>
+            <td style="font: normal normal 14px/21px Poppins;
+                        letter-spacing: 0px;
+                        color: #4E5983;" th:text="${item.getExpense()}">
+                12500
+            </td>
+
+        </tr>
+
+        <tr style="border-bottom: solid 1px #F5F5F5; height: 40px">
+            <td colspan="3" style="font: normal normal 600 16px/45px Poppins;
+                                    letter-spacing: 0px;
+                                    color: #707070;
+                                    text-transform: uppercase;
+                        text-align: right;
+                        border-top: solid 2px #F5F5F5;" th:text="${cashFlowSummary.getTotal()>=0?'Profit':'Loss'}">
+                Profit
+            </td>
+            <td colspan="3" style="font: normal normal 600 16px/45px Poppins;
+                                        letter-spacing: 0px;
+                                        color: #22C674;
+                                        border-top: solid 2px #F5F5F5;
+
+                       " th:text="${cashFlowSummary.getTotal()}">
+                18250
+            </td>
+
+        </tr>
+    </table>
+</div>
+
+<!--<div style="margin: 25px; padding: 25px; background-color: #FFFFFF; text-align: center" th:if="${not #lists.isEmpty(taskSummaryUser)}">-->
+<!--    <p style="text-align: center;-->
+<!--        font: normal normal 20px/30px Poppins;-->
+<!--        letter-spacing: 0px;-->
+<!--        color: #354052;-->
+<!--        font-weight: 600;">Task summary</p>-->
+<!--    <table width="100%" style="text-align: center">-->
+<!--        <tr>-->
+<!--            <td style="font: normal normal  14px/21px Poppins;-->
+<!--                    letter-spacing: 0px;-->
+<!--                    color: #3F4451;-->
+<!--                    font-weight: 600;-->
+<!--                    ">Assigness</td>-->
+<!--            <td style="font: normal normal  14px/21px Poppins;-->
+<!--                    letter-spacing: 0px;-->
+<!--                    color: #3F4451;-->
+<!--                    font-weight: 600;-->
+<!--                    ">No of Tasks Assigned</td>-->
+<!--            <td style="font: normal normal  14px/21px Poppins;-->
+<!--                    letter-spacing: 0px;-->
+<!--                    color: #3F4451;-->
+<!--                    font-weight: 600;-->
+<!--                    ">Completed Tasks</td>-->
+<!--            <td style="font: normal normal  14px/21px Poppins;-->
+<!--                    letter-spacing: 0px;-->
+<!--                    color: #3F4451;-->
+<!--                    font-weight: 600;-->
+<!--                    ">Pending Tasks</td>-->
+
+<!--        </tr>-->
+<!--        <tr style=" height: 40px">-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                01-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                02-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                05-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                10-->
+<!--            </td>-->
+
+<!--        </tr>-->
+<!--        <tr style=" height: 40px">-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                11-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                12-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                15-->
+<!--            </td>-->
+<!--            <td style="font: normal normal 14px/21px Poppins;-->
+<!--                        letter-spacing: 0px;-->
+<!--                        color: #4E5983;">-->
+<!--                14-->
+<!--            </td>-->
+
+<!--        </tr>-->
+<!--    </table>-->
+<!--</div>-->
+
+
+</body>
+
+<div style="text-align: center; margin: 100px 0 20px;">
+    <a href="#"><i class="fab fa-twitter fa-2x" style="margin-left:20px; color: black; "></i></a>
+    <a href="#"><i class="fab fa-facebook-f fa-2x" style="margin-left:20px; color: black; "></i></a>
+    <a href="#"><i class="fab fa-instagram fa-2x" style="margin-left:20px; color: black; "></i></a>
+    <h4 style="text-align: center;
+                font: normal normal 300 16px/25px Poppins;
+                color: #354052;
+                margin: 0">© Copyrights 2021 SenzAgro Pvt Ltd. All Rights Reserved.</h4>
+    <h4 style="ext-align: center;
+                font: normal normal 300 16px/25px Poppins;
+                color: #354052;
+                font-weight: 600;
+                margin:0">www.senzagro.com | +94 114248299</h4>
+</div>
+</html>

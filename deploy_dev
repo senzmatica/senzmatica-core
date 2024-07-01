@@ -1,0 +1,13 @@
+ cd /home/azureuser/apps/magma-core-dev
+ git pull
+ mvn clean install
+
+
+ cd ../magma-senzagro
+
+ git checkout dev
+ git pull
+ cp ../magma-core-dev/service/target/*.jar lib/
+ git add .
+ git commit -am"Core dev updated: JK"
+ git push origin dev

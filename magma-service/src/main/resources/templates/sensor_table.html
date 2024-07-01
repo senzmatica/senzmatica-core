@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Document</title>
+    <!-- Fontawesome -->
+    <script src="https://use.fontawesome.com/releases/v5.13.0/js/all.js"></script>
+
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins');
+    </style>
+
+    <style>
+        .card-heading {
+            padding-top: 20px !important;
+            font: normal normal normal 32px/48px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;
+        }
+
+        .card-names {
+            color: #354052;
+            font: normal normal normal 24px/36px Poppins;
+        }
+
+        .green-container {
+            background-color: #22C674;
+            height: 200px;
+            padding: 100px 50px;
+            height: 100px;
+        }
+
+        .energy {
+            margin-left: 50px;
+            display: grid;
+            grid-template-columns:  auto auto;
+
+
+        }
+
+        .table-data {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .table-data-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calender {
+            height: auto;
+            width: 625px;
+            margin: auto;
+            display: flex;
+            flex-direction: row;
+            flex-flow: wrap;
+            padding: 50px;
+
+
+        }
+
+        .date {
+            color: #B1B1B1;
+            font: normal normal bold 16px/25px Poppins;
+            padding: 4px 0 0 5px;
+        }
+
+        .blue {
+            background-color: #1155CC;
+        }
+
+        .secondary-blue {
+            background-color: #3C78D8;
+        }
+
+        .light-blue {
+            background-color: #A4C2F4;
+        }
+
+        .dark-blue {
+            background-color: #1C4587;
+        }
+
+        .black {
+            background-color: #000;
+        }
+
+        .calender-box {
+            height: 88px;
+            width: 88px;
+        }
+
+        .calender-value {
+            text-align: center;
+            color: #fff;
+            font: normal normal 600 16px/25px Poppins;
+        }
+
+        .date-icon-container {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .calender-icon {
+            height: 33px;
+            width: 33px;
+            margin-left: auto;
+            padding: 2px 5px 0 0;
+        }
+
+        .energy-2 {
+            display: grid;
+            grid-template-columns: auto auto;
+
+        }
+
+        .energy-1 {
+            display: grid;
+            grid-template-columns: 100px auto;
+            margin-top: 25px;
+        }
+
+        .ml-auto {
+            margin-left: auto;
+        }
+
+        .energy-align {
+            text-align: right;
+        }
+
+        .card-values {
+            font: normal normal 600 30px/45px Poppins;
+            color: #0069AA;
+        }
+
+        .more-details {
+            font: normal normal 300 24px/25px Poppins;
+            color: #707070;
+            margin-right: 50px;
+            text-decoration: none;
+        }
+
+        .scouting-value {
+            font: normal normal 600 30px/45px Poppins;
+        }
+
+        .monthly-update {
+            font: normal normal 600 32px/65px Poppins;
+            text-align: center;
+            color: #354052;
+            margin: 0px;
+        }
+
+        .img {
+            height: 100px;
+            width: 100px;
+            border-radius: 50%;
+            background-color: #F5F5F5;
+            text-align: center;
+        }
+
+        .img-icon {
+            padding-top: 10px;
+        }
+
+        .icons {
+            margin: 10px;
+            color: #354052;
+        }
+
+        .summary, .container {
+            background-color: #fff;
+            margin: 460px 70px 50px;
+        }
+
+        .water-summary {
+            background-color: #fff;
+            margin: 0 20px 50px;
+            width: auto;
+            height: auto;
+            margin-bottom: 100px;
+        }
+
+        .summary-box {
+            background-color: #fff;
+            margin: 50px 70px 50px;
+
+        }
+
+        .table {
+            padding: 50px;
+            display: flex;
+            flex-flow: wrap;
+        }
+
+
+        @media all and (max-width: 900px) {
+
+            .calender-box {
+                height: 76px;
+                width: 71px;
+            }
+        }
+
+        @media all and (max-width: 654px) {
+            .calender {
+                padding: 50px 10px;
+            }
+
+        }
+
+        @media all and (max-width: 900px) {
+            .calender {
+                width: auto;
+                justify-content: center;
+            }
+        }
+
+
+        @media all and (max-width: 426px) {
+            .green-container {
+                padding: 50px 25px;
+            }
+
+            .summary-box {
+
+                margin: 30px 45px 30px;
+
+            }
+
+            .container {
+                margin-left: 45px;
+                margin-right: 45px;
+                margin-bottom: 30px;
+            }
+
+            .summary {
+                margin-left: 45px;
+                margin-right: 45px;
+                margin-bottom: 30px;
+            }
+
+            .table {
+                margin-left: 10px;
+            }
+
+            .senzagro {
+                height: 70px;
+            }
+
+            .monthly-update {
+                height: 30px;
+            }
+
+            .issues {
+                margin-top: 20px !important;
+            }
+
+            .table-row {
+                height: 100px;
+            }
+
+            .energy {
+                margin-left: 10px;
+            }
+
+            .table {
+                margin-top: 30px;
+            }
+
+
+        }
+
+        @media all and (max-width: 376px) {
+            .green-container {
+                padding: 30px 8px;
+
+            }
+
+            .summary-box {
+
+                margin: 30px 12px 50px;
+
+            }
+
+
+            .issues {
+                margin-top: 10px !important;
+            }
+
+            .card-heading {
+                line-height: 1.5rem;
+            }
+
+            .card-names {
+                line-height: 1.2rem;
+            }
+
+            .card-values {
+                line-height: 1.2rem;
+            }
+
+            .summary-box {
+                margin: 30px;
+            }
+
+            .summary {
+                margin-left: 30px;
+                margin-right: 30px;
+                margin-bottom: 30px;
+            }
+
+            .table {
+                margin-left: 10px;
+            }
+
+            .scouting-value {
+                line-height: 1.2rem;
+                margin-top: 15px;
+            }
+
+            .energy-1, .energy-2 {
+                margin-left: 20px !important;
+            }
+
+            .table-row {
+                height: 80px;
+            }
+
+        }
+
+
+        @media all and (max-width: 600px) {
+            .monthly-update {
+                font-size: 30px;
+            }
+
+        }
+
+
+        @media all and (max-width: 600px) {
+            .more-details {
+                font-size: 1rem !important;
+
+            }
+
+        }
+
+
+        @media all and (max-width: 646px) {
+            .energy {
+                grid-template-columns:  auto !important;
+
+            }
+
+            .energy-align {
+                text-align: left;
+            }
+
+        }
+
+        @media all and (max-width: 680px) {
+            .card-heading {
+                font-size: 1.3rem;
+
+            }
+
+            .card-names {
+                font-size: 1rem;
+            }
+
+            .card-values {
+                font-size: 1rem;
+            }
+
+            .scouting-value {
+                font-size: 1rem !important;
+            }
+
+
+        }
+
+        @media all and (max-width: 1024px) and (min-width: 456px) {
+            .summary {
+                margin-top: 600px !important;
+            }
+        }
+
+        @media all and (max-width: 425px) and (min-width: 416px) {
+            .summary {
+                margin-top: 500px;
+            }
+        }
+
+        @media all and (max-width: 415px) {
+            .summary {
+                margin-top: 450px;
+            }
+        }
+
+
+        @media all and (max-width: 299px) {
+            .summary {
+                margin-top: 600px;
+            }
+
+            .senzagro {
+                font-size: 0.5rem;
+            }
+        }
+
+
+        @media all and (max-width: 520px) and (min-width: 410px) {
+            .senzagro {
+                font-size: 3rem !important;
+            }
+        }
+
+        @media all and (max-width: 430px) and (min-width: 400px) {
+            .senzagro {
+                font-size: 2rem !important;
+            }
+
+            .monthly-update {
+                font-size: 1rem;
+            }
+
+            .card-heading {
+                font-size: 1rem;
+
+            }
+
+            .card-names {
+                font-size: 0.75rem;
+                line-height: 20px;
+            }
+
+            .card-values {
+                font-size: 0.75rem;
+                line-height: 20px;
+            }
+
+            .scouting-value {
+                font-size: 0.75rem !important;
+                line-height: 20px;
+                margin-top: 20px;
+            }
+
+            .img {
+                height: 80px;
+                width: 80px;
+            }
+
+            .img-icon {
+                height: 60px;
+
+            }
+
+            .img-icon-yield {
+                height: 80px;
+                width: 80px;
+                margin-bottom: 25px;
+            }
+
+            .energy-1 {
+
+                grid-template-columns: 80px auto;
+
+            }
+
+
+        }
+
+        @media all and (max-width: 1110px) {
+            .ml-auto {
+                margin-left: 0;
+            }
+        }
+
+        @media all and (max-width: 430px) {
+            .footer-text {
+
+                font-size: 12px !important;
+
+            }
+
+            .icons {
+                font-size: 14px;
+            }
+
+
+        }
+
+        @media all and (max-width: 400px) and (min-width: 390px) {
+            .senzagro {
+                font-size: 2rem !important;
+            }
+
+            .monthly-update {
+                font-size: 1rem;
+            }
+
+            .card-heading {
+                font-size: 1rem;
+
+            }
+
+            .card-names {
+                font-size: 0.675rem;
+            }
+
+            .card-values {
+                font-size: 0.675rem;
+            }
+
+            .scouting-value {
+                font-size: 0.675rem !important;
+            }
+
+            .img {
+                height: 70px;
+                width: 70px;
+            }
+
+            .img-icon {
+                height: 50px;
+
+            }
+
+            .img-icon-yield {
+                height: 70px;
+                width: 70px;
+            }
+
+            .energy-1 {
+
+                grid-template-columns: 70px auto;
+
+            }
+
+        }
+
+        @media all and (max-width: 390px) {
+            .senzagro {
+                font-size: 2rem !important;
+            }
+
+            .monthly-update {
+                font-size: 1rem;
+            }
+
+            .card-heading {
+                font-size: 1rem;
+
+            }
+
+            .card-names {
+                font-size: 0.5rem;
+            }
+
+            .card-values {
+                font-size: 0.5rem;
+            }
+
+            .scouting-value {
+                font-size: 0.5rem !important;
+            }
+
+            .img {
+                height: 60px;
+                width: 60px;
+            }
+
+            .img-icon {
+                height: 40px;
+
+            }
+
+            .img-icon-yield {
+                height: 60px;
+                width: 60px;
+                margin-bottom: 20px;
+            }
+
+            .energy-1 {
+
+                grid-template-columns: 60px auto;
+
+            }
+
+            .more-details {
+                font-size: 0.675rem !important;
+            }
+
+            .table {
+                margin-left: 20px !important;
+            }
+
+            .energy {
+                margin-left: 10px !important;
+
+
+            }
+        }
+
+
+    </style>
+
+</head>
+<body style="margin: 0;padding: 0; background-color: #F5F5F5;">
+<h2>Kit Id</h2>
+<h3 th:text="${kitId}">Kit Id</h3>
+<h2>Number</h2>
+<h3 th:text="${number}">Number</h3>
+
+<table style="width:100%">
+    <tr>
+        <th>Date</th>
+        <th>Min</th>
+        <th>Max</th>
+        <th>Average</th>
+    </tr>
+    <tr th:each="item : ${reports}">
+        <td th:text="${item.date}">Jill</td>
+        <td th:text="${item.lowestValue}">Jill</td>
+        <td th:text="${item.highestValue}">Jill</td>
+        <td th:text="${item.averageValue}">Jill</td>
+    </tr>
+</table>
+
+
+</body>
+</html>

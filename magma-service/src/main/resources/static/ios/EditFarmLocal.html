@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        #map {
+            height: 100%;
+        / / padding-bottom: 25 px;
+        / / added to hide google copyright info in the map
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline-color: #22C674;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #manual-measuring-panel {
+            position: absolute;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
+            z-index: 5;
+            padding: 5px;
+            background-color: #fff;
+            border-radius: 15px 15px 15px 15px;
+            text-align: center;
+            font-family: 'Roboto', 'sans-serif';
+            line-height: 30px;
+        }
+
+        #current-location-button {
+            position: absolute;
+            bottom: 150px;
+            right: 10px;
+        }
+
+        .triple-options-panel {
+            z-index: 5;
+            padding: 5px;
+            text-align: center;
+            font-family: 'Roboto', 'sans-serif';
+            line-height: 30px;
+        }
+
+        .green-button-with-text {
+            background: #22C674 0% 0% no-repeat padding-box;
+            padding: 5px;
+            margin-left: 16px;
+            margin-right: 16px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            line-height: 30px;
+            display: flex;
+            flex: 1;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .current-location-first-child {
+            background-color: #fff;
+            border: none;
+            outline: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            padding: 0;
+        }
+
+        .current-location-second-child {
+            width: 20px;
+            height: 20px;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;;
+        }
+
+        @font-face {
+            font-family: Poppins-Regular;
+            src: url('./fonts/Poppins-Regular.ttf') format('truetype');
+        }
+
+        .search-input-icons i {
+            position: absolute;
+        }
+
+        .search-input-icons {
+            width: 70%;
+            padding: 5px;
+            height: 31px;
+            border-radius: 5px 5px 5px 5px;
+            outline: none;
+            color: #9DBFAF;
+            border: none;
+            margin: 5px 0 0 .5em;
+            display: none;
+        }
+
+        .icon {
+            padding: 13px;
+            color: silver;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .search-input-field {
+            width: 100%;
+            padding: 10px;
+            height: 21px;
+            text-align: left;
+            padding-left: 35px;
+            border: none;
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div style="z-index: 5;position: absolute;left: 0px;top: 0px;display: block;"
+     class="search-input-icons"
+     id="searchContainer1">
+
+    <i class="fa fa-search icon"></i>
+    <input class="search-input-field" type="text" placeholder="Search" id="txtSearch">
+</div>
+
+<div id="manual-measuring-panel" style="display: block; touch-action: none;">
+    <div class="triple-options-panel" style="display:flex; flex-direction: row;">
+        <div onclick="deleteFarm();" style="width: 33.3%">
+            <img style="margin-right:auto; margin-left:auto; display: block; width: 18px; height: 20px; background: 0% 0% no-repeat padding-box; opacity: 1;"
+                 src="trash-2.svg">
+            <span style="vertical-align:middle; color: #757575; font-family: 'Poppins-Regular','sans-serif';"> Delete</span>
+        </div>
+        <div onclick="undo();" style="width: 33.3%; justify-content: center; align-items: center">
+            <img style="margin-right:auto; margin-left:auto; display: block; width: 20px; height: 20px; background: 0% 0% no-repeat padding-box; opacity: 1;"
+                 src="rotate-ccw.svg">
+            <span style="vertical-align:middle; color: #757575; font-family: 'Poppins-Regular','sans-serif';"> Undo</span>
+        </div>
+        <div onclick="redo();" style="width: 33.3%">
+            <img style="margin-right:auto; margin-left:auto; display: block; width: 20px; height: 20px; background: 0% 0% no-repeat padding-box; opacity: 1;"
+                 src="rotate-cw.svg">
+            <span style="vertical-align:middle; color: #757575; font-family: 'Poppins-Regular','sans-serif';"> Redo</span>
+        </div>
+    </div>
+    <div onclick="confirm();" class="green-button-with-text">
+        <span style="color: #FFFFFF; font-family: 'Poppins-Regular','sans-serif';"> Next </span>
+    </div>
+</div>
+
+<div id="map"></div>
+
+<!--need to enable if current location needed-->
+<div id="current-location-button" style="display: none;" onclick="getCurrentLoc()">
+    <div title='Your Location' class="current-location-first-child">
+        <img class="current-location-second-child" src="current_location.png"/>
+    </div>
+</div>
+
+<script>
+
+    var poly;
+    var map, infoWindow, markerCurrentLocation;
+    var path;
+    var undoArray = [];
+    var redoArray = [];
+    let currentFarm = {};
+    let isDeleting = false;
+    let isExistingFarm = false;
+    let isInserting = false;
+    let tempDeleteArray = [];
+    let tempSetArray = [];
+    let farmsArray = [];
+    let farmsArrayIncrementation = 0;
+    let isWaterSourceAdd = false;
+    let setAtFalse = false;
+    let dragging = false;
+    let isDraggingUndo = false;     //only for undo option
+    let isDeletingUndo = false;     //only for undo option
+
+    const MAP_STYLE = [
+        {
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#E5E5E5"
+                }
+            ]
+        },
+        {
+            "elementType": "labels.icon",
+            "stylers": [
+                {
+                    "visibility": "off"
+                }
+            ]
+        },
+        {
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#616161"
+                }
+            ]
+        },
+        {
+            "elementType": "labels.text.stroke",
+            "stylers": [
+                {
+                    "color": "#f5f5f5"
+                }
+            ]
+        },
+        {
+            "featureType": "administrative.land_parcel",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#bdbdbd"
+                }
+            ]
+        },
+        {
+            "featureType": "poi",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#eeeeee"
+                }
+            ]
+        },
+        {
+            "featureType": "poi",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#757575"
+                }
+            ]
+        },
+        {
+            "featureType": "poi.park",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#e5e5e5"
+                }
+            ]
+        },
+        {
+            "featureType": "poi.park",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#9e9e9e"
+                }
+            ]
+        },
+        {
+            "featureType": "road",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#ffffff"
+                }
+            ]
+        },
+        {
+            "featureType": "road.arterial",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#757575"
+                }
+            ]
+        },
+        {
+            "featureType": "road.highway",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#dadada"
+                }
+            ]
+        },
+        {
+            "featureType": "road.highway",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#616161"
+                }
+            ]
+        },
+        {
+            "featureType": "road.local",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#9e9e9e"
+                }
+            ]
+        },
+        {
+            "featureType": "transit.line",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#e5e5e5"
+                }
+            ]
+        },
+        {
+            "featureType": "transit.station",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#eeeeee"
+                }
+            ]
+        },
+        {
+            "featureType": "water",
+            "elementType": "geometry",
+            "stylers": [
+                {
+                    "color": "#c9c9c9"
+                }
+            ]
+        },
+        {
+            "featureType": "water",
+            "elementType": "labels.text.fill",
+            "stylers": [
+                {
+                    "color": "#9e9e9e"
+                }
+            ]
+        }
+    ];
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            zoom: 13,
+            center: {lat: 6.9253, lng: 79.8613123},
+            disableDefaultUI: true,
+            styles: MAP_STYLE,
+            mapTypeId: 'satellite'
+        });
+
+        //Map search Start
+        var input = document.getElementById('txtSearch');
+        var searchContainer = document.getElementById('searchContainer');
+        var searchBox = new google.maps.places.SearchBox(input);
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchContainer);
+
+        map.addListener('bounds_changed', function () {
+            searchBox.setBounds(map.getBounds());
+        });
+
+        var markers = [];
+        searchBox.addListener('places_changed', function () {
+            var places = searchBox.getPlaces();
+
+            if (places.length == 0) {
+                return;
+            }
+
+            markers.forEach(function (marker) {
+                marker.setMap(null);
+            });
+            markers = [];
+
+            var bounds = new google.maps.LatLngBounds();
+            places.forEach(function (place) {
+                if (!place.geometry) {
+                    console.log("Returned place contains no geometry");
+                    return;
+                }
+                var icon = {
+                    url: place.icon,
+                    size: new google.maps.Size(71, 71),
+                    origin: new google.maps.Point(0, 0),
+                    anchor: new google.maps.Point(17, 34),
+                    scaledSize: new google.maps.Size(25, 25)
+                };
+                markers.push(new google.maps.Marker({
+                    map: map,
+                    icon: icon,
+                    title: place.name,
+                    position: place.geometry.location
+                }));
+
+                if (place.geometry.viewport) {
+                    bounds.union(place.geometry.viewport);
+                } else {
+                    bounds.extend(place.geometry.location);
+                }
+            });
+            map.fitBounds(bounds);
+        });
+//Map search End
+
+        if (navigator.appVersion.includes('Android')) {
+            document.addEventListener("message", function (data) {
+                if (data.data.includes("SENZMATEAGRO")) {
+                    let splitArray = data.data.split("SENZMATEAGRO");
+                    currentFarm = JSON.parse(splitArray[0]);
+                    getCenterOfFarm(JSON.parse(splitArray[0]));
+                    if (JSON.parse(splitArray[1]).WaterSourceEdit) {
+                        isWaterSourceAdd = true;
+                        JSON.parse(splitArray[1]).waterResources.forEach(addFarmPolygon);
+                    } else {
+                        JSON.parse(splitArray[1]).forEach(addFarmPolygon);
+                    }
+                } else if (JSON.parse(data.data).name === 'current location') {
+                    let currentPosition = JSON.parse(data.data);
+                    showPosition(currentPosition);
+                } else {
+                    showError(JSON.parse(data.data).message);
+                }
+            });
+        } else {
+            window.addEventListener("message", function (data) {
+                if (data.data.includes("SENZMATEAGRO")) {
+                    let splitArray = data.data.split("SENZMATEAGRO");
+                    currentFarm = JSON.parse(splitArray[0]);
+                    getCenterOfFarm(JSON.parse(splitArray[0]));
+                    if (JSON.parse(splitArray[1]).WaterSourceEdit) {
+                        isWaterSourceAdd = true;
+                        JSON.parse(splitArray[1]).waterResources.forEach(addFarmPolygon);
+                    } else {
+                        JSON.parse(splitArray[1]).forEach(addFarmPolygon);
+                    }
+                } else if (JSON.parse(data.data).name === 'current location') {
+                    let currentPosition = JSON.parse(data.data);
+                    showPosition(currentPosition);
+                } else {
+                    showError(JSON.parse(data.data).message);
+                }
+            });
+        }
+
+        addListenerOnMap();
+
+        poly = new google.maps.Polygon({
+            strokeOpacity: 1,
+            fillColor: isWaterSourceAdd ? '#232c8d' : '#22C6877B',
+            strokeColor: '#A3A3A3',
+            strokeWeight: 3,
+            editable: true,
+            draggable: true,
+            suppressUndo: true, // added for hiding undo button
+        });
+
+        poly.setMap(map);
+
+        markerCurrentLocation = new google.maps.Marker({
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 7,
+                fillColor: '#4285F4',
+                fillOpacity: 1,
+                strokeColor: '#ABC3E7',
+                strokeWeight: 4,
+                strokeOpacity: 1
+            },
+            map: map
+        });
+
+        infoWindow = new google.maps.InfoWindow;
+
+
+        google.maps.event.addListener(poly, 'dragstart', function (event) {
+            dragging = true;
+            tempSetArray = [];
+            for (let i = 0; i < poly.getPath().length; i++) {
+                tempSetArray.push(poly.getPath().getAt(i));
+            }
+            const elem = ['drag'];
+            undoArray.push(elem);
+        });
+
+        google.maps.event.addListener(poly, 'dragend', function (event) {
+            dragging = false;
+        });
+
+        //https://stackoverflow.com/questions/25931148/google-map-api-v3-adding-custom-undo-redo-function-for-edited-polygon
+        google.maps.event.addListener(poly, 'dblclick', function (e) {
+            poly.getPath().removeAt(e.vertex);
+        });
+
+        google.maps.event.addListener(poly.getPath(), 'remove_at', function (index, removedPosition) {
+            if (!isInserting) {
+                if (!isDraggingUndo) {
+                    if (isDeleting) {
+                        tempDeleteArray.push(removedPosition);
+                    } else {
+                        const elem = ['remove', index, removedPosition]
+                        undoArray.push(elem);
+                    }
+                }
+            }
+        });
+
+        google.maps.event.addListener(poly.getPath(), 'insert_at', function (index) {
+            if (!isInserting) {
+                if (!isDraggingUndo && !isDeletingUndo) {
+                    if (!isExistingFarm) {
+                        const insertedCoordinates = poly.getPath().getAt(index);
+                        const elem = ['insert', index, insertedCoordinates];
+                        undoArray.push(elem);
+                    }
+                }
+            }
+        });
+
+        google.maps.event.addListener(poly.getPath(), 'set_at', function (index, previous) {
+            if (!dragging) {
+                const currentCoordinates = poly.getPath().getAt(index);
+                let isInsideFarm = false;
+                for (let i = 0; i < farmsArrayIncrementation; i++) {
+                    isInsideFarm = google.maps.geometry.poly.containsLocation(currentCoordinates, farmsArray[i]);
+                    if (isInsideFarm) break;
+                }
+
+                if (!isInsideFarm) {
+                    const isIntersectionValue = checkIntersection();
+                    if (isIntersectionValue === 2) {
+                        setAtFalse = true;
+                        window.ReactNativeWebView.postMessage('Farms should not intersect with each other');
+                        poly.getPath().removeAt(index)
+                        // poly.getPath().setAt(index, previous);
+                        setAtFalse = false;
+
+
+                    } else if (isIntersectionValue) {
+                        setAtFalse = true;
+                        window.ReactNativeWebView.postMessage('Farms should not intersect with each other');
+                        poly.getPath().removeAt(index)
+
+                        // poly.getPath().setAt(index, previous);
+                        setAtFalse = false;
+                    } else if (!setAtFalse) {
+                        window.ReactNativeWebView.postMessage('reset');
+                        var elem = ['edit', index, previous, currentCoordinates];
+                        undoArray.push(elem);
+                    }
+
+                } else {
+                    setAtFalse = true;
+                    poly.getPath().setAt(index, previous);
+                    window.ReactNativeWebView.postMessage('A Farm should be outside the existing farm boundaries' + index + previous);
+
+                    setAtFalse = false;
+                }
+            }
+        });
+
+    }
+
+    function checkIntersection() {
+        let coordinates = '';
+
+        let geometryFactory;
+        let bermudaPolygon;
+        let anotherPolygon;
+        let intersection;
+
+        let tempPoly = new google.maps.Polygon({
+            strokeOpacity: 1,
+            fillColor: isWaterSourceAdd ? '#232c8d' : '#22C6877B',
+            strokeColor: '#A3A3A3',
+            strokeWeight: 3,
+            editable: true,
+            draggable: true,
+            suppressUndo: true, // added for hiding undo button
+        });
+
+        if (poly.getPath().length > 2) {
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, poly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    return 2;
+                }
+
+                if (coordinates.length > 0) break;
+
+            }
+
+        } else if (poly.getPath().length > 1) {
+
+            tempPoly.getPath().push(poly.getPath().getAt(0));
+            tempPoly.getPath().push(poly.getPath().getAt(1));
+            tempPoly.getPath().push(new google.maps.LatLng(poly.getPath().getAt(1).lat() + 0.00000001, poly.getPath().getAt(1).lng() + 0.000000001));
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, tempPoly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    console.log(e)
+                }
+
+                if (coordinates.length > 0) break;
+            }
+        } else if (poly.getPath().length > 0) {
+
+            tempPoly.getPath().push(poly.getPath().getAt(0));
+            tempPoly.getPath().push(new google.maps.LatLng(poly.getPath().getAt(0).lat() + 0.00000001, poly.getPath().getAt(0).lng() + 0.000000001));
+            tempPoly.getPath().push(new google.maps.LatLng(poly.getPath().getAt(0).lat() - 0.00000001, poly.getPath().getAt(0).lng() + 0.000000001));
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, tempPoly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    console.log(e)
+                }
+
+                if (coordinates.length > 0) break;
+            }
+        }
+
+        return coordinates.length > 0;
+    }
+
+    function checkIntersectionInsert(eventLatLng) {
+
+        let coordinates = '';
+
+        let geometryFactory;
+        let bermudaPolygon;
+        let anotherPolygon;
+        let intersection;
+
+        let tempPoly = new google.maps.Polygon({
+            strokeOpacity: 1,
+            fillColor: isWaterSourceAdd ? '#232c8d' : '#22C6877B',
+            strokeColor: '#A3A3A3',
+            strokeWeight: 3,
+            editable: true,
+            draggable: true,
+            suppressUndo: true, // added for hiding undo button
+        });
+
+        if (poly.getPath().length > 2) {
+
+            isInserting = true;
+            poly.getPath().push(eventLatLng);
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, poly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    poly.getPath().removeAt(poly.getPath().length - 1);
+                    isInserting = false;
+                    return 2;
+                }
+
+                if (coordinates.length > 0) {
+                    poly.getPath().removeAt(poly.getPath().length - 1);
+                    isInserting = false;
+                    return true;
+                }
+            }
+
+            poly.getPath().removeAt(poly.getPath().length - 1);
+            isInserting = false;
+
+        } else if (poly.getPath().length > 1) {
+
+            tempPoly.getPath().push(poly.getPath().getAt(0));
+            tempPoly.getPath().push(poly.getPath().getAt(1));
+            tempPoly.getPath().push(eventLatLng);
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, tempPoly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    console.log(e)
+                }
+
+                if (coordinates.length > 0) break;
+            }
+        } else if (poly.getPath().length > 0) {
+
+            tempPoly.getPath().push(poly.getPath().getAt(0));
+            tempPoly.getPath().push(eventLatLng);
+            tempPoly.getPath().push(new google.maps.LatLng(eventLatLng.lat() + 0.00000001, eventLatLng.lng() + 0.000000001));
+
+            for (let i = 0; i < farmsArray.length; i++) {
+
+                geometryFactory = new jsts.geom.GeometryFactory();
+                bermudaPolygon = createJstsPolygon(geometryFactory, tempPoly);
+                anotherPolygon = createJstsPolygon(geometryFactory, farmsArray[i]);
+
+                try {
+                    intersection = bermudaPolygon.intersection(anotherPolygon);
+                    coordinates = intersection.getCoordinates();
+                } catch (e) {
+                    console.log(e)
+                }
+
+                if (coordinates.length > 0) break;
+            }
+        }
+
+        return coordinates.length > 0;
+    }
+
+    function createJstsPolygon(geometryFactory, polygon) {
+        var path = polygon.getPath();
+        var coordinates = path.getArray().map(function name(coord) {
+            return new jsts.geom.Coordinate(coord.lat(), coord.lng());
+        });
+        coordinates.push(coordinates[0]);
+        var shell = geometryFactory.createLinearRing(coordinates);
+        return geometryFactory.createPolygon(shell);
+    }
+
+    function addFarmPolygon(farm) {
+        if (farm.id !== currentFarm.id) {
+            farmsArray[farmsArrayIncrementation] = new google.maps.Polygon({
+                paths: farm.coordinates,
+                fillColor: isWaterSourceAdd ? '#232c8d' : '#22C6877B',
+                fillOpacity: 0.35,
+                strokeColor: isWaterSourceAdd ? '#4285F4' : '#22C687',
+                strokeOpacity: 1.0,
+                strokeWeight: 3,
+                clickable: false
+            });
+            farmsArray[farmsArrayIncrementation].setMap(map);
+            farmsArrayIncrementation++;
+        } else if (farm.coordinates[0].lat !== undefined && farm.coordinates[0].lat !== null) {
+            isExistingFarm = true;
+            for (let i = 0; i < farm.coordinates.length; i++) {
+                let temp = new google.maps.LatLng(farm.coordinates[i].lat, farm.coordinates[i].lng);
+                path = poly.getPath();
+                path.push(temp);
+            }
+            isExistingFarm = false;
+        } else if (farm.coordinates[0].latitude !== undefined && farm.coordinates[0].latitude !== null) {
+            isExistingFarm = true;
+            for (let i = 0; i < farm.coordinates.length; i++) {
+                let temp = new google.maps.LatLng(farm.coordinates[i].latitude, farm.coordinates[i].longitude);
+                path = poly.getPath();
+                path.push(temp);
+            }
+            isExistingFarm = false;
+        }
+
+    }
+
+    function addNewCoordinate(event) {
+        path = poly.getPath();
+        let isInsideFarm = false;
+        for (let i = 0; i < farmsArrayIncrementation; i++) {
+            isInsideFarm = google.maps.geometry.poly.containsLocation(event.latLng, farmsArray[i]);
+            if (isInsideFarm) break;
+        }
+
+        if (!isInsideFarm) {
+            const isIntersectionValue = checkIntersectionInsert(event.latLng);
+            if (isIntersectionValue === 2) {
+                // window.ReactNativeWebView.postMessage('Farms lines should not intersect with each other');
+            } else if (isIntersectionValue) {
+                window.ReactNativeWebView.postMessage('Farms should not intersect with each other');
+            } else {
+                path.push(event.latLng);
+                window.ReactNativeWebView.postMessage('reset');
+            }
+        } else window.ReactNativeWebView.postMessage('A Farm should be outside the existing farm boundaries');
+    }
+
+    function undo() {
+        if (undoArray.length > 0) {
+            var temp = undoArray.pop();
+            switch (temp[0]) {
+                case 'insert' :
+                    poly.getPath().removeAt(temp[1]);
+                    undoArray.pop();
+                    redoArray.push(temp);
+                    break;
+                case 'remove' :
+                    poly.getPath().insertAt(temp[1], temp[2]);
+                    undoArray.pop();
+                    redoArray.push(temp);
+                    break;
+                case 'edit' :
+                    poly.getPath().setAt(temp[1], temp[2]);
+                    undoArray.pop();
+                    redoArray.push(temp);
+                    break;
+                case 'delete' :
+                    isDeletingUndo = true;
+                    path = poly.getPath();
+                    for (let i = 0; i < tempDeleteArray.length; i++) {
+                        path.push(tempDeleteArray[i]);
+                    }
+                    tempDeleteArray = [];
+                    redoArray.push(temp);
+                    isDeletingUndo = false;
+                    break;
+                case 'drag' :
+                    isDraggingUndo = true;
+                    const tempSetArray2 = tempSetArray;
+                    tempSetArray = [];
+                    for (let i = 0; i < poly.getPath().length; i++) {
+                        tempSetArray.push(poly.getPath().getAt(i));
+                    }
+                    poly.getPath().clear();
+                    for (let i = 0; i < tempSetArray2.length; i++) {
+                        poly.getPath().push(tempSetArray2[i]);
+                    }
+                    redoArray.push(temp);
+                    isDraggingUndo = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    function redo() {
+        if (redoArray.length > 0) {
+            var temp = redoArray.pop();
+            switch (temp[0]) {
+                case 'insert' :
+                    poly.getPath().insertAt(temp[1], temp[2]);
+                    break;
+                case 'remove' :
+                    poly.getPath().removeAt(temp[1]);
+                    break;
+                case 'edit' :
+                    poly.getPath().setAt(temp[1], temp[3]);
+                    break;
+                case 'delete' :
+                    isDeleting = true;
+                    const elem = ['delete'];
+                    undoArray.push(elem);
+                    poly.getPath().clear();
+                    isDeleting = false;
+                    break;
+                case 'drag' :
+                    isDraggingUndo = true;
+                    let tempSetArray2 = tempSetArray;
+                    tempSetArray = [];
+                    for (let i = 0; i < poly.getPath().length; i++) {
+                        tempSetArray.push(poly.getPath().getAt(i));
+                    }
+                    poly.getPath().clear();
+                    for (let i = 0; i < tempSetArray2.length; i++) {
+                        poly.getPath().push(tempSetArray2[i]);
+                    }
+                    undoArray.push(temp);
+                    isDraggingUndo = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    function deleteFarm() {
+        isDeleting = true;
+        const elem = ['delete'];
+        undoArray.push(elem);
+        poly.getPath().clear();
+        isDeleting = false;
+    }
+
+    function confirm() {
+        var polygonCoordinates = [];
+
+        if (poly.getPath().getLength() >= 3) {
+            for (var i = 0; i < poly.getPath().getLength(); i++) {
+                var xy = poly.getPath().getAt(i);
+                const coordinatesObj = {latitude: xy.lat(), longitude: xy.lng()}
+                //polygonCoordinates = polygonCoordinates + ',' +  xy.lat() + ',' + xy.lng();
+                polygonCoordinates.push(coordinatesObj);
+            }
+            //window.ReactNativeWebView.postMessage(poly.getPath().getLength())
+            window.ReactNativeWebView.postMessage(JSON.stringify(polygonCoordinates))
+        } else {
+            window.ReactNativeWebView.postMessage('A farm should consist of at least 3 points')
+        }
+    }
+
+    function getCurrentLoc() {
+        window.ReactNativeWebView.postMessage('Geolocation current location permission');
+    }
+
+    function addListenerOnMap() {
+        map.addListener('click', addNewCoordinate);
+    }
+
+    function showPosition(position) {
+        let pos = new google.maps.LatLng(position.lat, position.lng);
+        markerCurrentLocation.setPosition(pos);
+        map.setCenter(pos);
+    }
+
+    function getCenterOfFarm(farm) {
+        let bounds = new google.maps.LatLngBounds();
+        for (let i = 0; i < farm.coordinates.length; i++) {
+            bounds.extend(farm.coordinates[i]);
+        }
+        map.setCenter(bounds.getCenter());
+        map.fitBounds(bounds);
+    }
+
+    function showError(error) {
+        if (error.includes('Geolocation is supported and method call is not successful'))
+            window.ReactNativeWebView.postMessage("Location permissions not granted");
+        else
+            window.ReactNativeWebView.postMessage(error);
+    }
+
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA9uKFEIqgW63abTdvYTqb3gS6r-60FRpI&libraries=places&callback=initMap"
+        async defer></script>
+<script src="https://cdn.rawgit.com/bjornharrtell/jsts/gh-pages/1.1.2/jsts.min.js"></script>
+
+</body>
+</html>
