@@ -1,6 +1,6 @@
 package com.magma.core.service;
 
-import com.magma.core.data.entity.Kit;
+import com.magma.dmsdata.data.entity.Kit;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

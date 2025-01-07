@@ -1,10 +1,10 @@
 package com.magma.core.service;
 
 
-import com.magma.core.data.entity.Alert;
-import com.magma.core.data.entity.Error;
-import com.magma.core.data.entity.Kit;
-import com.magma.core.data.entity.Offline;
+import com.magma.dmsdata.data.entity.Alert;
+import com.magma.dmsdata.data.entity.Error;
+import com.magma.dmsdata.data.entity.Kit;
+import com.magma.dmsdata.data.entity.Offline;
 
 public abstract class KitNotificationService {
     public abstract String sendAlert(Kit kit, Alert alert);

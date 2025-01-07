@@ -27,6 +27,8 @@ public class MagmaCodec {
 
     private boolean encoderStatus;
 
+    private String scriptFormat;
+
     public String getId() {
         return id;
     }
@@ -107,6 +109,14 @@ public class MagmaCodec {
         this.encoderStatus = encoderStatus;
     }
 
+    public String getScriptFormat() {
+        return scriptFormat;
+    }
+
+    public void setScriptFormat(String scriptFormat) {
+        this.scriptFormat = scriptFormat;
+    }
+
     @Override
     public String toString() {
         return "MagmaCodec{" +
@@ -120,6 +130,7 @@ public class MagmaCodec {
                 ", encoderFileContent='" + encoderFileContent + '\'' +
                 ", encoderFileExtension='" + encoderFileExtension + '\'' +
                 ", encoderStatus=" + encoderStatus +
+                ", scriptFormat='" + scriptFormat + '\'' +
                 '}';
     }
 }

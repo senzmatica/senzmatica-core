@@ -1,16 +1,18 @@
 package com.magma.core.service;
 
-import com.magma.core.data.dto.KitDTO;
-import com.magma.core.data.entity.*;
+import com.magma.dmsdata.data.dto.KitDTO;
+import com.magma.dmsdata.data.entity.*;
+import com.magma.dmsdata.data.support.Offset;
+import com.magma.dmsdata.data.support.UserInfo;
+import com.magma.dmsdata.util.DataInputMethod;
+import com.magma.dmsdata.util.MagmaException;
+import com.magma.dmsdata.util.MagmaStatus;
 import com.magma.core.data.repository.*;
-import com.magma.core.data.support.Offset;
-import com.magma.core.data.support.UserInfo;
-import com.magma.core.util.DataInputMethod;
-import com.magma.core.util.MagmaException;
-import com.magma.core.util.MagmaStatus;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
+import com.mongodb.client.result.UpdateResult;
+
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,7 @@ public class KitCoreService {
     KitRepository kitRepository;
 
     @Autowired
-    KitModelService kitModelService;
+    KitModelRepository kitModelRepository;
 
     @Autowired
     UserConnectorService userConnectorService;
@@ -77,27 +79,10 @@ public class KitCoreService {
     public Kit create(String kitModelId, KitDTO kitDTO) {
         LOGGER.debug("Create Kit request found : {}", kitDTO);
 
-        KitModel kitModel = kitModelService.findKitModelById(kitModelId);
+        KitModel kitModel = kitModelRepository.findById(kitModelId).orElse(null);
         Kit kit = new Kit();
 
         BeanUtils.copyProperties(kitDTO, kit);
-        return kitCreateLogic(kit, kitModel);
-    }
-
-
-    public Kit createKit(String kitModelId, KitDTO kitDTO, String userId) {
-        LOGGER.debug("Create Kit request found : {}", kitDTO);
-
-        KitModel kitModel = kitModelService.findKitModelById(kitModelId);
-        Kit kit = new Kit();
-
-        UserInfo createdBy = new UserInfo();
-        UserInfo user = userConnectorService.findUser(userId);
-
-        BeanUtils.copyProperties(kitDTO, kit);
-        BeanUtils.copyProperties(user, createdBy);
-        kit.setCreatedBy(createdBy);
-
         return kitCreateLogic(kit, kitModel);
     }
 
@@ -108,7 +93,7 @@ public class KitCoreService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        if (kitRepository.findOne(kit.getId()) != null) {
+        if (kitRepository.findById(kit.getId()).orElse(null) != null) {
             throw new MagmaException(MagmaStatus.KIT_ALREADY_EXISTS);
         }
 
@@ -117,7 +102,7 @@ public class KitCoreService {
 
         if (kit.getDevices() != null) {
             for (String deviceId : kit.getDevices()) {
-                Device device = deviceRepository.findOne(deviceId);
+                Device device = deviceRepository.findById(deviceId).orElse(null);
 
                 if (device == null) {
                     throw new MagmaException(MagmaStatus.DEVICE_NOT_EXISTS);
@@ -207,7 +192,7 @@ public class KitCoreService {
 
     public Kit findKitById(String kitId) {
         LOGGER.debug("Find Kit request found : {}", kitId);
-        Kit kit = kitRepository.findOne(kitId);
+        Kit kit = kitRepository.findById(kitId).orElse(null);
         if (kit == null) {
             throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
         }
@@ -233,7 +218,7 @@ public class KitCoreService {
         LOGGER.debug("Delete request found KitId : {}", kitId);
 
         //TODO: Have to Think about Past Properties Data.
-        kitRepository.delete(kitId);
+        kitRepository.deleteById(kitId);
         return "Successfully Updated";
     }
 
@@ -350,7 +335,7 @@ public class KitCoreService {
         }
 
         if (kit.getKitModelId() != null) {
-            KitModel kitModel = kitModelService.findKitModelById(kit.getKitModelId());
+            KitModel kitModel = kitModelRepository.findById(kit.getKitModelId()).orElse(null);
             db.setModel(kitModel);
         }
 
@@ -361,7 +346,7 @@ public class KitCoreService {
             db.setDevices(kit.getDevices());
 
             for (String deviceId : kit.getDevices()) {
-                Device device = deviceRepository.findOne(deviceId);
+                Device device = deviceRepository.findById(deviceId).orElse(null);
 
                 if (device == null) {
                     throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
@@ -440,91 +425,6 @@ public class KitCoreService {
         return kitRepository.save(db);
     }
 
-    public List<Sensor> findSensorHistoryByKitAndNumber(String deviceId, Integer number, Sort.Direction direction, String from, String to) {
-        LOGGER.debug("Find Sensor request found Device : {}, Number : {}", deviceId, number);
-
-        Device device = deviceService.findDeviceById(deviceId);
-
-        if (device.getSensorCodes().length < number) {
-            throw new MagmaException(MagmaStatus.SENSOR_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-
-
-        if (direction.isDescending()) {
-            return sensorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(
-                    deviceId,
-                    number,
-                    MagmaTime.parse(from),
-                    MagmaTime.parse(to));
-        } else {
-            return sensorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(
-                    deviceId,
-                    number,
-                    MagmaTime.parse(from),
-                    MagmaTime.parse(to));
-        }
-
-    }
-
-    public List<Actuator> findActuatorHistoryByKitAndNumber(String deviceId, Integer number, Sort.Direction direction, String from, String to) {
-        LOGGER.debug("Find Actuator history request found Device : {}, Number : {}", deviceId, number);
-
-        Device device = deviceService.findDeviceById(deviceId);
-
-        if (device.getSensorCodes().length < number) {
-            throw new MagmaException(MagmaStatus.SENSOR_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-
-
-        if (direction.isDescending()) {
-            return actuatorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(
-                    deviceId,
-                    number,
-                    MagmaTime.parse(from),
-                    MagmaTime.parse(to));
-        } else {
-            return actuatorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(
-                    deviceId,
-                    number,
-                    MagmaTime.parse(from),
-                    MagmaTime.parse(to));
-        }
-
-    }
-
-
     public List<Property> findPropertyHistoryByKitAndNumber(String kitId, Integer number, String from, String to) {
         LOGGER.debug("Find Sensor request found Kit : {}, Number : {}", kitId, number);
 
@@ -559,34 +459,6 @@ public class KitCoreService {
                 MagmaTime.parse(to));
     }
 
-    public List<Property> findPropertyHistoryByKitAndNumber(String kitId, Integer number, DateTime from, DateTime to) {
-        LOGGER.debug("Find Sensor request found Kit : {}, Number : {}, Between : {} {}", kitId, number, from, to);
-
-        Kit kit = findKitById(kitId);
-
-        if (!kit.getPropertyMap().containsKey(number) && (number != -10)) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        return propertyRepository.findByKitIdAndNumberAndTimeBetween(kitId, number, from, to);
-    }
-
-
-    public List<Alert> findCurrentPropertyAlertByKitAndNumber(String kitId, Integer number) {
-        LOGGER.debug("Find Sensor request found Kit : {}, Number : {}", kitId, number);
-
-        Kit kit = findKitById(kitId);
-
-        if (number < 0 || kit.getModel().getNoOfProperties() < (number + 1)) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        return alertRepository.findByAlertLimitKitIdAndAlertLimitPropertyNumberAndEndTimeGreaterThanOrderByStartTimeDesc(
-                kitId,
-                number,
-                MagmaTime.now());
-    }
-
     public List<AlertLimit> findCurrentPropertyAlertLimitByKitAndNumber(String kitId, Integer number) {
         LOGGER.debug("Find Sensor request found Kit : {}, Number : {}", kitId, number);
 
@@ -599,19 +471,5 @@ public class KitCoreService {
         return alertLimitRepository.findByKitIdAndPropertyNumberOrderByLevelAsc(
                 kitId,
                 number);
-    }
-
-
-    public String updateKitOfflineStatus(String kitId, boolean offlineStatus) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("id").is(kitId));
-        Update update = new Update();
-        update.set("offline", offlineStatus);
-
-        if (!mongoTemplate.updateFirst(query, update, Kit.class).isUpdateOfExisting()) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        return "Successfully Updated";
     }
 }

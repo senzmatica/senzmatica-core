@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.util.AlertPersistence;
 import com.magma.dmsdata.util.AlertStatus;
+import com.magma.dmsdata.util.SensorCode;
+
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -24,7 +26,7 @@ public class AlertLimit {
 
     private Integer propertyNumber;
 
-    private String code;
+    private SensorCode code;
 
     private Integer level;
 
@@ -90,11 +92,11 @@ public class AlertLimit {
         this.propertyNumber = propertyNumber;
     }
 
-    public String getCode() {
+    public SensorCode getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(SensorCode code) {
         this.code = code;
     }
 

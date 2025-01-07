@@ -1,8 +1,8 @@
 package com.magma.core.api;
 
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.support.CorporateDeviceSummary;
-import com.magma.core.data.support.CorporateSensorSummary;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.support.CorporateDeviceSummary;
+import com.magma.dmsdata.data.support.CorporateSensorSummary;
 import com.magma.core.service.ReferenceService;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,8 @@ public class CorporateApi {
     }
 
     @RequestMapping(value = "/user/{user}/corporate/{corporate}/sensorSummary", method = RequestMethod.GET)
-    public MagmaResponse<CorporateSensorSummary> getCorporateAlerts(@PathVariable("corporate") String corporateId) {
+    public MagmaResponse<CorporateSensorSummary> getCorporateAlerts(@PathVariable("corporate") String corporateId,
+                                                                    @PathVariable("user") String userId) {
         return new MagmaResponse<>(corporateService.getCorporateWiseSensorSummary(corporateId));
     }
 

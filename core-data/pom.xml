@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.magma.core</groupId>
         <artifactId>magma-core</artifactId>
-        <version>1.0.0.4</version>
+        <version>1.2.0.0</version>
     </parent>
     <artifactId>core-data</artifactId>
 

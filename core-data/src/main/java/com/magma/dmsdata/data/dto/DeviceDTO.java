@@ -9,6 +9,7 @@ import com.magma.dmsdata.data.support.Protocol;
 import com.magma.dmsdata.data.support.Shift;
 import com.magma.dmsdata.util.ActuatorCode;
 import com.magma.dmsdata.util.Configuration;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -25,11 +26,11 @@ public class DeviceDTO {
     @NotEmpty(message = "Device id can't be empty")
     private String id;
 
-    @NotNull(message = "Pleace provide device name")
+    @NotNull(message = "Please provide device name")
     @NotEmpty(message = "Device name can't be empty")
     private String name;
 
-    private String[] sensorCodes;
+    private SensorCode[] sensorCodes;
 
     private Integer noOfSensors;
 
@@ -39,6 +40,7 @@ public class DeviceDTO {
 
     private Boolean maintain;
     private Integer interval;
+    private Integer batchNumber;
 
     private Integer intervalMin = 10;
 
@@ -65,7 +67,11 @@ public class DeviceDTO {
     private Map<String, String> metaData = null;
 
     private String simNumber;
+    private Map<String, String> sensorLabelMap;
 
+    private String productType;
+
+    private String temperatureUnit;
 
     public DeviceDTO() {
     }
@@ -92,11 +98,11 @@ public class DeviceDTO {
         this.name = name;
     }
 
-    public String[] getSensorCodes() {
+    public SensorCode[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(String[] sensorCodes) {
+    public void setSensorCodes(SensorCode[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -240,5 +246,37 @@ public class DeviceDTO {
 
     public void setBattery(Battery battery) {
         this.battery = battery;
+    }
+
+    public Map<String, String> getSensorLabelMap() {
+        return sensorLabelMap;
+    }
+
+    public void setSensorLabelMap(Map<String, String> sensorLabelMap) {
+        this.sensorLabelMap = sensorLabelMap;
+    }
+
+    public Integer getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(Integer batchNumber) {
+        this.batchNumber = batchNumber;
+    }
+
+    public String getProductType() {
+        return productType;
+    }
+
+    public void setProductType(String productType) {
+        this.productType = productType;
+    }
+
+    public String getTemperatureUnit() {
+        return temperatureUnit;
+    }
+
+    public void setTemperatureUnit(String temperatureUnit) {
+        this.temperatureUnit = temperatureUnit;
     }
 }

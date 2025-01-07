@@ -1,8 +1,8 @@
 package com.magma.core.service;
 
 
-import com.magma.core.data.entity.Action;
-import com.magma.core.data.entity.Property;
+import com.magma.dmsdata.data.entity.Action;
+import com.magma.dmsdata.data.entity.Property;
 
 public abstract class DataTriggerService {
     public abstract void triggerForAction(Action action);

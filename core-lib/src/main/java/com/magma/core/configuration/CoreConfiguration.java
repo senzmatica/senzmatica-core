@@ -10,7 +10,8 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableScheduling
 public class CoreConfiguration {
-    @Bean
+    
+    @Bean(name = "customTaskScheduler")
     public Executor taskScheduler() {
         // set properties if required
         ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();

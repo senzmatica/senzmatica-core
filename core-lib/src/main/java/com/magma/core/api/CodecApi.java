@@ -1,7 +1,7 @@
 package com.magma.core.api;
 
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.MagmaCodec;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.MagmaCodec;
 import com.magma.core.service.MagmaCodecService;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;

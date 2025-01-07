@@ -3,6 +3,7 @@ package com.magma.dmsdata.data.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.data.support.Acl;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -30,6 +31,8 @@ public class Vmq_acl_auth {
     private String backupPasshash;
 
     private boolean status = true;
+
+    private boolean isProtect = false;
 
     private List<Acl> publish_acl = new ArrayList<>();
 
@@ -116,6 +119,14 @@ public class Vmq_acl_auth {
 
     public void setStatus(boolean status) {
         this.status = status;
+    }
+
+    public boolean isProtect() {
+        return isProtect;
+    }
+
+    public void setProtect(boolean protect) {
+        isProtect = protect;
     }
 
     @Override

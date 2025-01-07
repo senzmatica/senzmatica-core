@@ -1,8 +1,8 @@
 package com.magma.core.service;
 
 
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.Offline;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.Offline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

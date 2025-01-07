@@ -3,15 +3,14 @@ package com.magma.core.job;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.Offline;
-import com.magma.core.data.entity.Sensor;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.Offline;
+import com.magma.dmsdata.data.entity.Sensor;
 import com.magma.core.data.repository.*;
-import com.magma.core.data.support.DeviceSummary;
+import com.magma.dmsdata.data.support.DeviceSummary;
+import com.magma.core.service.CoreService;
 import com.magma.core.service.DeviceMaintenanceService;
-import com.magma.core.service.KitCoreService;
 import com.magma.core.service.KitNotificationService;
-import com.magma.core.util.SensorCode;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -55,7 +54,7 @@ public class CoreSchedule {
     DeviceMaintenanceService deviceMaintenanceService;
 
     @Autowired
-    KitCoreService kitService;
+    CoreService coreService;
 
     @Value("${device.offline.interval}")
     private Integer offlineInterval;
@@ -105,7 +104,8 @@ public class CoreSchedule {
                     kit.setOffline(false);
                     isOffline = false;
                 }
-                kitService.updateKitOfflineStatus(kit.getId(), isOffline);
+                coreService.updateKitOfflineStatus(kit.getId(), isOffline);
+                //kitRepository.save(kit);
 
             } catch (Exception e) {
                 LOGGER.error("Exception In Schedule :", e);
@@ -202,10 +202,11 @@ public class CoreSchedule {
         DeviceSummary deadDevices = new DeviceSummary();
 
 
-        HashMap<SensorCode, List<Double>> sensorFailureValues = new HashMap<>();
+        HashMap<String, List<Double>> sensorFailureValues = new HashMap<>();
         sensorFailureValueRepository.findAll().forEach(obj -> {
-            sensorFailureValues.put(obj.getCode(), obj.getValues());
+            sensorFailureValues.put(obj.getCode().toString(), obj.getValues());
         });
+
 
         for (Device device : devices) {
             totalDevices.addDevice(device.getId());
@@ -217,9 +218,10 @@ public class CoreSchedule {
                 continue;
             }
             List<Sensor> deviceHistory = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                    device.getId(), 0, new PageRequest(0, countAnalyseDeviceSummary));
+                    new String(device.getId()), 0, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
             List<Sensor> batteryHistory = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                    device.getId(), batteryPropertyNumber, new PageRequest(0, countAnalyseDeviceSummary));
+                    new String(device.getId()), batteryPropertyNumber, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
+
 
             DateTime now = MagmaTime.now();
             if (device.getLastSeen() == null) {
@@ -230,7 +232,7 @@ public class CoreSchedule {
                 offlineDevices.addDevice(device.getId());
             }
 
-            if (!deviceHistory.isEmpty()) {
+            if (deviceHistory.size() != 0) {
                 int estimatorOnBatteryLast = 0;
                 int estimatorOnBattery = 0;
                 int minNoOfEntries = Math.min(countAnalyseDeviceSummary, batteryHistory.size());
@@ -302,10 +304,10 @@ public class CoreSchedule {
                     }
                 }
                 boolean isAnySensorOfDeviceFailure = false;
-                for (i = 0; i < device.getSensorCodes().length && !isAnySensorOfDeviceFailure; i++) {
+                for (int ii = 0; ii < device.getSensorCodes().length && !isAnySensorOfDeviceFailure; ii++) {
                     List<Sensor> deviceHistoryX = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                            device.getId(), i, new PageRequest(0, countAnalyseDeviceSummary));
-                    List<Double> sensorFailureValueX = sensorFailureValues.get(device.getSensorCodes()[i]);
+                            new String(device.getId()), ii, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
+                    List<Double> sensorFailureValueX = sensorFailureValues.get(device.getSensorCodes()[ii]);
                     int estimatorSensorFailure = 0;
 
                     for (int j = 0; j < Math.min(countAnalyseDeviceSummary, deviceHistoryX.size()); j++) {
@@ -336,6 +338,7 @@ public class CoreSchedule {
         networkServiceInterruptionDevices.setNoOfDevice(noDevicesNetworkServiceInterruption);
         offlineDevices.setNoOfDevice(noDevicesOffline);
         totalDevices.setNoOfDevice(devices.size());
+//        deadDevices.setDeviceList(totalDevices.getDeviceList().stream().filter(x -> !aliveDevices.getDeviceList().contains(x)).collect(Collectors.toList()));
         deadDevices.setNoOfDevice(noDevicesDead);
 
         devicesSummary.clear();

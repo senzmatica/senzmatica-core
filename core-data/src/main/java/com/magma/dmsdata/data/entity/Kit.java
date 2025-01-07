@@ -7,8 +7,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.support.Offset;
 import com.magma.dmsdata.data.support.Shift;
+import com.magma.dmsdata.data.support.UserInfo;
 import com.magma.dmsdata.util.DataInputMethod;
 import com.magma.dmsdata.util.MagmaModelSerializer;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
@@ -41,6 +43,8 @@ public class Kit {
     private KitModel model;
 
     private List<String> devices;
+
+    private List<SensorCode> sensorSort;
 
     // <DeviceId, Index> TODO: Have to Remove
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -104,6 +108,10 @@ public class Kit {
     private DateTime modifiedDate;
 
     private String referenceName;
+
+    private UserInfo createdBy;
+
+    private UserInfo modifiedBy;
 
     public Kit() {
     }
@@ -332,6 +340,30 @@ public class Kit {
         this.inputMethod = inputMethod;
     }
 
+    public UserInfo getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UserInfo createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UserInfo getModifiedBy() {
+        return modifiedBy;
+    }
+
+    public void setModifiedBy(UserInfo modifiedBy) {
+        this.modifiedBy = modifiedBy;
+    }
+
+    public List<SensorCode> getSensorSort() {
+        return sensorSort;
+    }
+
+    public void setSensorSort(List<SensorCode> sensorSort) {
+        this.sensorSort = sensorSort;
+    }
+
     @Override
     public String toString() {
         return "Kit{" +
@@ -341,9 +373,11 @@ public class Kit {
                 ", kitModelId='" + kitModelId + '\'' +
                 ", model=" + model +
                 ", devices=" + devices +
+                ", sensorSort=" + sensorSort +
                 ", deviceMap=" + deviceMap +
                 ", offsetMap=" + offsetMap +
                 ", propertyMap=" + propertyMap +
+                ", shiftMap=" + shiftMap +
                 ", actionMap=" + actionMap +
                 ", geo=" + geo +
                 ", battery=" + battery +
@@ -355,9 +389,13 @@ public class Kit {
                 ", status=" + status +
                 ", alerts=" + alerts +
                 ", metaData=" + metaData +
+                ", inputMethod=" + inputMethod +
                 ", lastSeen=" + lastSeen +
                 ", creationDate=" + creationDate +
                 ", modifiedDate=" + modifiedDate +
+                ", referenceName='" + referenceName + '\'' +
+                ", createdBy=" + createdBy +
+                ", modifiedBy=" + modifiedBy +
                 '}';
     }
 }

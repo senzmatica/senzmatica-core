@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.util.MagmaException;
 import com.magma.dmsdata.util.MagmaStatus;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,9 +25,11 @@ public class Http_acl_auth {
 
     private String password;
 
-    private String passhash;
+    private String passHash;
 
-    private String backupPasshash;
+    private String backupPassHash;
+
+    private String backupClient_id;
 
     private String grant_type;
 
@@ -35,6 +38,8 @@ public class Http_acl_auth {
     private List<String> authorities;
 
     private boolean status = true;
+
+    private boolean protect = false;
 
     public Http_acl_auth() {
 
@@ -80,20 +85,28 @@ public class Http_acl_auth {
         this.password = password;
     }
 
-    public String getPasshash() {
-        return passhash;
+    public String getPassHash() {
+        return passHash;
     }
 
-    public void setPasshash(String passhash) {
-        this.passhash = passhash;
+    public void setPassHash(String passHash) {
+        this.passHash = passHash;
     }
 
-    public String getBackupPasshash() {
-        return backupPasshash;
+    public String getBackupPassHash() {
+        return backupPassHash;
     }
 
-    public void setBackupPasshash(String backupPasshash) {
-        this.backupPasshash = backupPasshash;
+    public void setBackupPassHash(String backupPassHash) {
+        this.backupPassHash = backupPassHash;
+    }
+
+    public String GetBackupClient_id() {
+        return backupClient_id;
+    }
+
+    public void SetBackupClient_id(String backupClient_id) {
+        this.backupClient_id = backupClient_id;
     }
 
     public String getGrant_type() {
@@ -128,6 +141,14 @@ public class Http_acl_auth {
         this.status = status;
     }
 
+    public boolean isProtect() {
+        return protect;
+    }
+
+    public void setProtect(boolean protect) {
+        this.protect = protect;
+    }
+
     @Override
     public String toString() {
         return "Http_acl_auth{" +
@@ -136,8 +157,9 @@ public class Http_acl_auth {
                 ", client_secret='" + client_secret + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
-                ", passhash='" + passhash + '\'' +
-                ", backupPasshash='" + backupPasshash + '\'' +
+                ", passHash='" + passHash + '\'' +
+                ", backupPassHash='" + backupPassHash + '\'' +
+                ", backupClient_id='" + backupClient_id + '\'' +
                 ", grant_type='" + grant_type + '\'' +
                 ", scope='" + scope + '\'' +
                 ", authorities=" + authorities +

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.support.*;
 import com.magma.dmsdata.util.ActuatorCode;
 import com.magma.dmsdata.util.Configuration;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
@@ -38,7 +39,7 @@ public class Device {
 
     private Integer noOfSensors;
 
-    private String[] sensorCodes;
+    private SensorCode[] sensorCodes;
 
     @JsonIgnore
     private Map<Integer, Sensor> sensorMap = new HashMap<>();
@@ -82,7 +83,7 @@ public class Device {
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
     private DateTime lastSeen;
 
-    @JsonIgnore
+    @JsonSerialize(using = MagmaDateTimeSerializer.class)
     @CreatedDate
     private DateTime creationDate;
 
@@ -101,16 +102,32 @@ public class Device {
     private MagmaCodec codec;
 
     private String magmaCodecId;
+
     private String lastRawData;
+
     private String referenceName;
 
     private Map<String, String> metaData = null;
 
+    private String customPublishTopic;
+
+    private String customRemoteTopic;
+
+    private UserInfo createdBy;
+
+    private UserInfo modifiedBy;
+
+    // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION
+    // ----------------------------------------
+    private String productType;
+
+    private String temperatureUnit;
+
     public Device() {
     }
 
-    public Device(String id, Integer interval, Integer noOfSensors, String[] sensorCodes, Integer noOfActuators,
-                  ActuatorCode[] actuatorCodes) {
+    public Device(String id, Integer interval, Integer noOfSensors, SensorCode[] sensorCodes, Integer noOfActuators,
+            ActuatorCode[] actuatorCodes) {
         this.id = id;
         this.interval = interval;
         this.noOfSensors = noOfSensors;
@@ -201,11 +218,11 @@ public class Device {
         this.noOfSensors = noOfSensors;
     }
 
-    public String[] getSensorCodes() {
+    public SensorCode[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(String[] sensorCodes) {
+    public void setSensorCodes(SensorCode[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -443,15 +460,60 @@ public class Device {
         this.metaData = metaData;
     }
 
-    // public String getReferenceName(){
-    // return corporateConnectorService.referenceName(this.kitId);
-    // }
+    public String getCustomPublishTopic() {
+        return customPublishTopic;
+    }
+
+    public void setCustomPublishTopic(String customPublishTopic) {
+        this.customPublishTopic = customPublishTopic;
+    }
+
+    public String getCustomRemoteTopic() {
+        return customRemoteTopic;
+    }
+
+    public void setCustomRemoteTopic(String customRemoteTopic) {
+        this.customRemoteTopic = customRemoteTopic;
+    }
+
+    public UserInfo getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(UserInfo createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public UserInfo getModifiedBy() {
+        return modifiedBy;
+    }
+
+    public void setModifiedBy(UserInfo modifiedBy) {
+        this.modifiedBy = modifiedBy;
+    }
+
+    public String getProductType() {
+        return productType;
+    }
+
+    public void setProductType(String productType) {
+        this.productType = productType;
+    }
+
+    public String getTemperatureUnit() {
+        return temperatureUnit;
+    }
+
+    public void setTemperatureUnit(String temperatureUnit) {
+        this.temperatureUnit = temperatureUnit;
+    }
 
     @Override
     public String toString() {
         return "Device{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
+                ", group='" + group + '\'' +
                 ", kitId='" + kitId + '\'' +
                 ", description='" + description + '\'' +
                 ", noOfSensors=" + noOfSensors +
@@ -476,11 +538,21 @@ public class Device {
                 ", lastSeen=" + lastSeen +
                 ", creationDate=" + creationDate +
                 ", modifiedDate=" + modifiedDate +
-                ", magmaDecoderId=" + magmaCodecId +
                 ", batchNumber=" + batchNumber +
                 ", product=" + product +
                 ", deviceParameterConfiguration=" + deviceParameterConfiguration +
+                ", references=" + references +
+                ", codec=" + codec +
+                ", magmaCodecId='" + magmaCodecId + '\'' +
+                ", lastRawData='" + lastRawData + '\'' +
+                ", referenceName='" + referenceName + '\'' +
+                ", metaData=" + metaData +
+                ", customPublishTopic='" + customPublishTopic + '\'' +
+                ", customRemoteTopic='" + customRemoteTopic + '\'' +
+                ", createdBy=" + createdBy +
+                ", modifiedBy=" + modifiedBy +
+                ", productType='" + productType + '\'' +
+                ", temperatureUnit='" + temperatureUnit + '\'' +
                 '}';
     }
-
 }

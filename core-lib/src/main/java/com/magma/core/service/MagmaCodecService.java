@@ -1,11 +1,12 @@
 package com.magma.core.service;
 
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.MagmaCodec;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.MagmaCodec;
+import com.magma.dmsdata.util.MagmaException;
+import com.magma.dmsdata.util.MagmaStatus;
 import com.magma.core.data.repository.DeviceRepository;
 import com.magma.core.data.repository.MagmaCodecRepository;
-import com.magma.core.util.MagmaException;
-import com.magma.core.util.MagmaStatus;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ public class MagmaCodecService {
     private CompileCodeFileService compileCodeFileService;
 
     public MagmaCodec createMagmaCodec(MultipartFile decoderFile, MultipartFile encoderFile, String codecName, String scriptFormat) {
+        LOGGER.debug("Creating new codec with name : {}", codecName);
 
         MagmaCodec newCodec = new MagmaCodec();
 
@@ -103,7 +105,7 @@ public class MagmaCodecService {
     }
 
     public String deleteCodec(String codecId) {
-        MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId);
+        MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId).orElse(null);
 
         LOGGER.debug("MagmaCodec for codec id : {}, is {}", codecId, magmaCodec);
 
@@ -137,7 +139,7 @@ public class MagmaCodecService {
                 Boolean isDecoderFileValid = false;
                 Boolean isEncoderFileValid = false;
 
-                MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId);
+                MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId).orElse(null);
 
                 if (magmaCodec == null) {
                     throw new MagmaException(MagmaStatus.INVALID_INPUT);
@@ -210,13 +212,13 @@ public class MagmaCodecService {
     }
 
     public List<Device> connectDeviceWithCodec(String codecId, List<String> deviceIds) {
-        MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId);
+        MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId).orElse(null);
         if (magmaCodec == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
         List<Device> updatedDevices = new ArrayList<>();
         deviceIds.forEach(deviceId -> {
-            Device newDevice = deviceRepository.findById(deviceId);
+            Device newDevice = deviceRepository.findById(deviceId).orElse(null);
             if (newDevice != null && newDevice.getMagmaCodecId() != null) {
                 LOGGER.debug(newDevice.getName() + " already connected with " + newDevice.getCodec().getCodecName());
             } else {
@@ -235,14 +237,14 @@ public class MagmaCodecService {
     }
 
     public Device updateCodec(String deviceId, String updateCodecId) {
-        Device connectedDevice = deviceRepository.findById(deviceId);
+        Device connectedDevice = deviceRepository.findById(deviceId).orElse(null);
         connectedDevice.setMagmaCodecId(updateCodecId);
         deviceRepository.save(connectedDevice);
         return connectedDevice;
     }
 
     public Device disconnectDeviceAndCodec(String deviceId) {
-        Device device = deviceRepository.findById(deviceId);
+        Device device = deviceRepository.findById(deviceId).orElse(null);
         device.setMagmaCodecId(null);
         deviceRepository.save(device);
         return device;
@@ -252,7 +254,7 @@ public class MagmaCodecService {
         List<Device> updatedDevices = new ArrayList<>();
 
         for (String deviceId : deviceIds) {
-            Device device = deviceRepository.findById(deviceId);
+            Device device = deviceRepository.findById(deviceId).orElse(null);
 
             if (device != null) {
                 device.setMagmaCodecId(null);

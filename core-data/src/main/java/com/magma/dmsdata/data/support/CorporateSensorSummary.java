@@ -2,6 +2,7 @@ package com.magma.dmsdata.data.support;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import org.joda.time.DateTime;
 
@@ -19,7 +20,7 @@ public class CorporateSensorSummary {
 
     private int totalNumbersOfSensorsInCorporate;
 
-    private List<String> sensorCodesInCorporate;
+    private List<SensorCode> sensorCodesInCorporate;
 
     private List<String> sensorsInCorporate;
 
@@ -63,11 +64,11 @@ public class CorporateSensorSummary {
         this.totalNumbersOfSensorsInCorporate = totalNumbersOfSensorsInCorporate;
     }
 
-    public List<String> getSensorCodesInCorporate() {
+    public List<SensorCode> getSensorCodesInCorporate() {
         return sensorCodesInCorporate;
     }
 
-    public void setSensorCodesInCorporate(List<String> sensorCodesInCorporate) {
+    public void setSensorCodesInCorporate(List<SensorCode> sensorCodesInCorporate) {
         this.sensorCodesInCorporate = sensorCodesInCorporate;
     }
 

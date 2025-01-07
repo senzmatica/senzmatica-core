@@ -2,35 +2,30 @@ package com.magma.core.service;
 
 
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.core.data.dto.DeviceParameterConfigurationDTO;
-import com.magma.core.data.dto.PropertyDTO;
-import com.magma.core.data.dto.TypeOfKitDTO;
-import com.magma.core.data.entity.Error;
-import com.magma.core.data.entity.*;
-import com.magma.core.data.repository.*;
-import com.magma.core.data.support.*;
-import com.magma.core.grpc.PredictionInput;
-import com.magma.core.grpc.PredictionInputs;
-import com.magma.core.grpc.PredictionOutputs;
-import com.magma.core.grpc.SensorPredict;
 import com.magma.core.job.CoreSchedule;
-import com.magma.core.util.*;
+import com.magma.dmsdata.data.dto.DeviceParameterConfigurationDTO;
+import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.repository.*;
+import com.magma.dmsdata.data.support.*;
+import com.magma.dmsdata.util.*;
 import com.magma.util.MagmaTime;
+import com.mongodb.client.result.UpdateResult;
+
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 @Service
@@ -60,6 +55,9 @@ public class CoreService {
     SensorFailureValueRepository sensorFailureValueRepository;
 
     @Autowired
+    DeviceParameterConfigurationRepository deviceParameterConfigurationRepository;
+
+    @Autowired
     PropertyRepository propertyRepository;
 
     @Autowired
@@ -67,6 +65,9 @@ public class CoreService {
 
     @Autowired
     AlertRepository alertRepository;
+
+    @Autowired
+    ActuatorRepository actuatorRepository;
 
     @Autowired
     GeoRepository geoRepository;
@@ -93,9 +94,6 @@ public class CoreService {
     DeviceParameterConfigurationUtil deviceParameterConfigurationUtil;
     @Autowired
     KitTypeRepository kitTypeRepository;
-
-    @Autowired
-    KitCoreService kitService;
 
     @Autowired
     DeviceService deviceService;
@@ -126,7 +124,7 @@ public class CoreService {
             ip = null;
         }
         deviceParameterConfigurationDTO.getDeviceIds().forEach((id) -> {
-            Device device = deviceRepository.findOne(id);
+            Device device = deviceRepository.findById(id).orElse(null);
             if (device != null) {
 
                 DeviceParameterConfiguration conf = new DeviceParameterConfiguration();
@@ -151,7 +149,7 @@ public class CoreService {
         LOGGER.debug("Update Device's Remote Configurations for Device Id: {}", deviceId);
 
         // Retrieve the requested device from the repository
-        Device requestedDevice = deviceRepository.findOne(deviceId);
+        Device requestedDevice = deviceRepository.findById(deviceId).orElse(null);
 
         // Check if the device exists
         if (requestedDevice == null) {
@@ -262,7 +260,7 @@ public class CoreService {
                                 his.setMessageFormat(messageFormat);
 
                                 // Find existing message or create a new one
-                                Message existingMessage = messageRepository.findById(deviceId + "-" + String.valueOf(maxTopicNumber + i + 1));
+                                Message existingMessage = messageRepository.findById(deviceId + "-" + String.valueOf(maxTopicNumber + i + 1)).orElse(null);
                                 if (existingMessage != null) {
                                     existingMessage.setUpdateHistory(his);
                                     existingMessage.setMessage(messageChunks.get(i));
@@ -397,7 +395,7 @@ public class CoreService {
             LOGGER.debug("Device -{} To System Message to Update the device parameter configuration of device", tempDeviceId);
 
             // Retrieve the current device based on the temporary identifier or custom topics
-            Device currentDevice = Optional.ofNullable(deviceRepository.findOne(tempDeviceId))
+            Device currentDevice = Optional.ofNullable(deviceRepository.findById(tempDeviceId).orElse(null))
                     .orElseGet(() -> deviceRepository.findByCustomPublishTopicOrCustomRemoteTopic(tempDeviceId));
 
             // Check if the device is found
@@ -422,7 +420,7 @@ public class CoreService {
             List<ProductParameter> currentConfigurations = current.getRemoteConfigurations();
 
             // Retrieve the system message object based on device ID and topic number
-            Message messageObject = messageRepository.findById(deviceId + "-" + topicNumber);
+            Message messageObject = messageRepository.findById(deviceId + "-" + topicNumber).orElse(null);
             String message = messageObject.getMessage();
             LOGGER.debug("Message: {}", message);
 
@@ -800,7 +798,10 @@ public class CoreService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Kit kit = kitService.findKitById(kitId);
+        Kit kit = kitRepository.findById(kitId).orElse(null);
+        if (kit == null) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        }
         KitModel kitModel = kit.getModel();
 
 
@@ -864,7 +865,10 @@ public class CoreService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Kit db = kitService.findKitById(kitId);
+        Kit db = kitRepository.findById(kitId).orElse(null);
+        if (db == null) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        }
 
         if (Objects.equals(db.getAlertLevel(), level)) {
             return "No Update Found";
@@ -880,36 +884,6 @@ public class CoreService {
         return "Successfully Updated";
     }
 
-    public String updateBattery(String kitId, Battery battery) {
-        LOGGER.debug("Update request found Kit : {}, Battery : {}", kitId, battery);
-
-        if (battery == null) {
-            throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
-        }
-
-        Kit db = kitService.findKitById(kitId);
-
-        if (db.getModel().getBatteryEnabled() != null && !db.getModel().getBatteryEnabled()) {
-            throw new MagmaException(MagmaStatus.BATTERY_NOT_ENABLE);
-        }
-
-        if (db.getBattery() == null) {
-            db.setBattery(new Battery(240.0, 300.0));
-        }
-
-        if (battery.getHigh() != null) {
-            db.getBattery().setHigh(battery.getHigh());
-        }
-
-        if (battery.getLow() != null) {
-            db.getBattery().setLow(battery.getLow());
-        }
-
-        kitRepository.save(db);
-
-        return "Successfully Updated";
-    }
-
     public String updateInterval(String kitId, Integer interval) {
         LOGGER.debug("Update request found Kit : {}, Interval : {}", kitId, interval);
 
@@ -917,7 +891,10 @@ public class CoreService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Kit db = kitService.findKitById(kitId);
+        Kit db = kitRepository.findById(kitId).orElse(null);
+        if (db == null) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        }
         db.setInterval(interval);
         kitRepository.save(db);
 
@@ -926,7 +903,10 @@ public class CoreService {
 
     public List<Geo> findGeoHistoryByKit(String kitId, String from, String to, GeoType geoType) {
 
-        Kit kit = kitService.findKitById(kitId);
+        Kit kit = kitRepository.findById(kitId).orElse(null);
+        if (kit == null) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        }
 
         if (to == null && from == null) {
             to = MagmaTime.format(MagmaTime.now());
@@ -970,465 +950,15 @@ public class CoreService {
         return metaData;
     }
 
-    public TypeOfKit createKitType(TypeOfKitDTO typeOfKitDTO) {
-        TypeOfKit kitType = new TypeOfKit();
-        validateKitType(typeOfKitDTO.getValue());
-        String name = typeOfKitDTO.getValue().replaceAll("\\s", "-").toUpperCase();
-        BeanUtils.copyProperties(typeOfKitDTO, kitType);
-        kitType.setName(name);
-        return kitTypeRepository.save(kitType);
-    }
-
-
-    public List<TypeOfKit> getAllKitType() {
-        return kitTypeRepository.findAll();
-    }
-
-    public void validateKitType(String value) {
-        TypeOfKit typeOfKit = kitTypeRepository.findByValue(value);
-
-        if (typeOfKit != null && typeOfKit.getValue().equals(value)) {
-            throw new MagmaException(MagmaStatus.DUPLICATE_KIT_TYPE);
+    public Property changeLabel(String deviceId, String label, String propertyId) {
+        Property property = propertyRepository.findById(propertyId).orElse(null);
+        Device device = deviceRepository.findById(deviceId).orElse(null);
+        if (device == null || property == null) {
+            throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
-    }
-
-    public LinkedList<HashMap<String, Object>> getGraphDataOfKit(String kitId, String from, String to) {
-        Kit kit = kitService.findKitById(kitId);
-        if (kit == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        int noOfProperties = kit.getModel().getNoOfProperties();
-        if (noOfProperties == 0 && kit.getProperties().isEmpty() && kit.getBattery() == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-
-        LinkedList<HashMap<String, Object>> graphData = new LinkedList<>();
-
-        List<Property> properties = kit.getProperties();
-        if (kit.getBattery() != null) {
-            properties.add(new Property(kitId, batteryPropertyNumber, SensorCode.B, null, null, 0.0));
-        }
-        for (Property property : properties) {
-            int propertyNumber = property.getNumber();
-
-            if (kit.getModel().getNoOfProperties() < (propertyNumber + 1)) {
-                throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-            }
-
-            HashMap<String, Object> graphDataX = new HashMap<>();
-            graphDataX.put("propertyNumber", propertyNumber);
-
-            List<AlertLimit> alertLimitsX = alertLimitRepository.findByKitIdAndPropertyNumber(kitId, propertyNumber);
-            int length = alertLimitsX.size();
-            if (length != kit.getAlertLevel()) {
-                int diff = kit.getAlertLevel() - length;
-                for (int i = 0; i < diff; i++) {
-                    alertLimitsX.add(new AlertLimit(length + i + 1, 0.0, 0.0));
-                }
-            }
-            graphDataX.put("alertLimit", alertLimitsX);
-
-            List<Property> propertyData = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, from.substring(0, 10), to.substring(0, 10));
-            LinkedList<Double> valueY = new LinkedList<>();
-            LinkedList<DateTime> valueXDate = new LinkedList<>();
-            for (Property property1 : propertyData) {
-                valueY.add(property1.getValue());
-                valueXDate.add(property1.getTime());
-            }
-            List<String> valueX = valueXDate.stream().map(MagmaTime::format).collect(Collectors.toList());
-            if (valueX.isEmpty() || valueY.isEmpty()) {
-                graphData.add(new HashMap<>());
-                continue;
-            }
-
-            graphDataX.put("valueX", valueX);
-            graphDataX.put("valueY", valueY);
-            graphData.add(graphDataX);
-        }
-        return graphData;
-    }
-
-
-    public HashMap<String, Object> getGraphDataOfKitByNumber(String kitId, String from, String to, int number) {
-        Kit kit = kitService.findKitById(kitId);
-        if (kit == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        int noOfProperties = kit.getModel().getNoOfProperties();
-        if (noOfProperties == 0 && kit.getProperties().isEmpty() && kit.getBattery() == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-
-        List<Property> properties = kit.getProperties();
-        if (kit.getBattery() != null) {
-            properties.add(new Property(kitId, batteryPropertyNumber, SensorCode.B, null, null, 0.0));
-        }
-
-        List<Property> propertyFiltered = properties.stream().filter(property1 -> property1.getNumber() == number).collect(Collectors.toList());
-
-        Property property = propertyFiltered.get(0);
-
-        if (property == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-        int propertyNumber = property.getNumber();
-
-        if (kit.getModel().getNoOfProperties() < (propertyNumber + 1)) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        HashMap<String, Object> graphDataX = new HashMap<>();
-        graphDataX.put("propertyNumber", propertyNumber);
-
-        List<AlertLimit> alertLimitsX = alertLimitRepository.findByKitIdAndPropertyNumber(kitId, propertyNumber);
-        int length = alertLimitsX.size();
-        if (length != kit.getAlertLevel()) {
-            int diff = kit.getAlertLevel() - length;
-            for (int i = 0; i < diff; i++) {
-                alertLimitsX.add(new AlertLimit(length + i + 1, 0.0, 0.0));
-            }
-        }
-        graphDataX.put("alertLimit", alertLimitsX);
-
-        List<Property> propertyData = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, from.substring(0, 10), to.substring(0, 10));
-        LinkedList<Double> valueY = new LinkedList<>();
-        LinkedList<DateTime> valueXDate = new LinkedList<>();
-        for (Property property1 : propertyData) {
-            valueY.add(property1.getValue());
-            valueXDate.add(property1.getTime());
-        }
-        List<String> valueX = valueXDate.stream().map(MagmaTime::format).collect(Collectors.toList());
-
-        graphDataX.put("valueX", valueX);
-        graphDataX.put("valueY", valueY);
-        return graphDataX;
-    }
-
-    public HashMap<String, Object> getGraphDataOfKitByNumber(String format, String kitId, String from, String to, int number, Aggregation aggregation, Integer interval, Granularity granularity, boolean enableStat, Integer hourOfDay) {
-        Kit kit = kitService.findKitById(kitId);
-        if (kit == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        int noOfProperties = kit.getModel().getNoOfProperties();
-        if (noOfProperties == 0 && kit.getProperties().isEmpty() && kit.getBattery() == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-        List<Property> properties = kit.getProperties();
-        if (kit.getBattery() != null) {
-            properties.add(new Property(kitId, batteryPropertyNumber, SensorCode.B, null, null, 0.0));
-        }
-
-        List<Property> propertyFiltered = properties.stream().filter(property1 -> property1.getNumber() == number).collect(Collectors.toList());
-
-        Property property = propertyFiltered.get(0);
-
-        if (property == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-        int propertyNumber = property.getNumber();
-
-        if (kit.getModel().getNoOfProperties() < (propertyNumber + 1)) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-        LinkedList<Double> valueY = new LinkedList<>();
-        LinkedList<DateTime> valueXDate = new LinkedList<>();
-
-        HashMap<String, Object> graphDataX = new HashMap<>();
-        graphDataX.put("propertyNumber", propertyNumber);
-
-
-        List<AlertLimit> alertLimitsX = alertLimitRepository.findByKitIdAndPropertyNumber(kitId, propertyNumber);
-        int length = alertLimitsX.size();
-        if (length != kit.getAlertLevel()) {
-            int diff = kit.getAlertLevel() - length;
-            for (int i = 0; i < diff; i++) {
-                alertLimitsX.add(new AlertLimit(length + i + 1, 0.0, 0.0));
-            }
-        }
-        graphDataX.put("alertLimit", alertLimitsX);
-
-
-        List<Property> propertyData = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, from.substring(0, 10), to.substring(0, 10));
-
-        if (aggregation == null && granularity == null) {
-            for (Property property1 : propertyData) {
-                valueY.add(property1.getValue());
-                valueXDate.add(property1.getTime());
-            }
-            //SD(8)
-        } else if (aggregation == Aggregation.TIME && granularity == Granularity.DAY) {
-            for (int i = 0; i < Integer.MAX_VALUE; i++) {
-
-                DateTime fromDateTimeStart = MagmaTime.parse(from);
-                DateTime toDateTimeEnd = MagmaTime.parse(to);
-                DateTime fromDateTime = fromDateTimeStart.plusHours(i);
-                DateTime toDateTime = fromDateTimeStart.plusHours(i + 1);
-
-                if (toDateTime.isAfter(toDateTimeEnd)) {
-                    break;
-                }
-
-                if (fromDateTime.hourOfDay().get() == hourOfDay) {
-                    List<Property> propertyList = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, fromDateTime, fromDateTime.plusHours(1));
-
-                    valueY.add(propertyList.get(0).getValue());
-
-                    valueXDate.add(fromDateTime);
-
-
-                }
-
-
-            }
-
-        } else if (granularity != null && aggregation != null) {
-
-            DateTime fromDateTimeStart = MagmaTime.parse(from);
-            DateTime toDateTimeEnd = MagmaTime.parse(to);
-
-
-            for (int i = 0; i < Integer.MAX_VALUE; i++) {
-
-                DateTime fromDateTime = granularity == Granularity.DAY ? fromDateTimeStart.plusDays(i) : fromDateTimeStart.plusHours(i);
-                DateTime toDateTime = granularity == Granularity.DAY ? fromDateTimeStart.plusDays(i + 1) : fromDateTimeStart.plusHours(i + 1);
-
-                DateTime toDateTimeEndTime = granularity == Granularity.DAY ? toDateTimeEnd.plusDays(1) : toDateTimeEnd.plusHours(1);
-
-                if (toDateTime.isAfter(toDateTimeEndTime)) {
-                    break;
-                }
-
-                List<Property> propertyList = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, fromDateTime, toDateTime);
-
-                valueXDate.add(fromDateTime);
-
-                if (propertyList.isEmpty()) {
-                    valueY.add(0.0);
-                    continue;
-                }
-                //    SUM(0), AVG(1), MAX(2), MIN(3), ANY(4), LATEST(5), PREDICT(6), AND(7), OR(8);
-                Property propertyL = null;
-                switch (aggregation.value()) {
-
-                    case 3:
-                        propertyL = propertyList.stream()
-                                .min(Comparator.comparing(Property::getValue))
-                                .orElseThrow(NoSuchElementException::new);
-                        break;
-                    case 0:
-                        Double sum = propertyList.stream()
-                                .mapToDouble(Property::getValue).sum();
-                        propertyL = new Property();
-                        propertyL.setValue(sum);
-                        break;
-                    case 2:
-                        propertyL = propertyList.stream()
-                                .max(Comparator.comparing(Property::getValue))
-                                .orElseThrow(NoSuchElementException::new);
-                        break;
-
-                }
-                valueY.add(propertyL != null ? propertyL.getValue() : 0);
-
-            }
-        }
-
-        List<String> valueX = valueXDate.stream().map(MagmaTime::format).collect(Collectors.toList());
-        if (!valueY.isEmpty() && enableStat) {
-            GetRangeOfDataWithPercentage getRangeOfDataWithPercentage = new GetRangeOfDataWithPercentage(20, 40);
-            List<Double> data = new ArrayList<>(valueY);
-            HashMap<String, String> stat;
-            stat = getRangeOfDataWithPercentage.calculateRangeWithPercentage(90, data);
-            graphDataX.put("stat", stat);
-        }
-        if (format == null) {
-            graphDataX.put("valueX", valueX);
-            graphDataX.put("valueY", valueY);
-        } else if (format.equals("TABLE")) {
-            List<Map<String, Object>> resultList = new ArrayList<>();
-            for (int i = 0; i < Math.min(valueX.size(), valueY.size()); i++) {
-                Map<String, Object> tableObject = new HashMap<>();
-                tableObject.put("location", kit.getName());
-                tableObject.put("date", valueX.get(i));
-                tableObject.put("count", valueY.get(i));
-                resultList.add(tableObject);
-            }
-            graphDataX.put("valueTable", resultList);
-        }
-        return graphDataX;
-    }
-
-    public LinkedList<HashMap<String, Object>> getTrendLineOfKit(String kitId, String from, String to) {
-        Kit kit = kitService.findKitById(kitId);
-        if (kit == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        int noOfProperties = kit.getModel().getNoOfProperties();
-        if (noOfProperties == 0 && kit.getProperties().isEmpty() && kit.getBattery() == null) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        if (to == null && from == null) {
-            to = MagmaTime.format(MagmaTime.now());
-            from = MagmaTime.format(MagmaTime.now().minusDays(1));
-        } else if (to == null) {
-            to = from;
-            from += " 00:00";
-            to += " 23:59";
-        } else if (from == null) {
-            from = to;
-            from += " 00:00";
-            to += " 23:59";
-        } else {
-            from += " 00:00";
-            to += " 23:59";
-        }
-
-        LinkedList<HashMap<String, Object>> graphData = new LinkedList<>();
-
-        List<Property> properties = kit.getProperties();
-        if (kit.getBattery() != null) {
-            properties.add(new Property(kitId, batteryPropertyNumber, SensorCode.B, null, null, 0.0));
-        }
-
-        for (Property property : properties) {
-            int propertyNumber = property.getNumber();
-
-            if (kit.getModel().getNoOfProperties() < (propertyNumber + 1)) {
-                throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-            }
-
-            HashMap<String, Object> graphDataX = new HashMap<>();
-            graphDataX.put("propertyNumber", propertyNumber);
-            List<Property> propertyData = kitService.findPropertyHistoryByKitAndNumber(kitId, propertyNumber, from.substring(0, 10), to.substring(0, 10));
-            List<Float> valueY = new LinkedList<>();
-            LinkedList<DateTime> valueXDate = new LinkedList<>();
-            for (Property property1 : propertyData) {
-                valueY.add(property1.getValue().floatValue());
-                valueXDate.add(property1.getTime());
-            }
-            List<String> valueX = valueXDate.stream().map(MagmaTime::format).collect(Collectors.toList());
-
-
-            if (valueX.isEmpty() || valueY.isEmpty()) {
-                graphData.add(new HashMap<>());
-                continue;
-            }
-
-            graphDataX.put("valueX", valueX);
-
-            HashMap<String, Object> dataPredict = dataProcessorService.getPredictionAndTrendLine(valueY, 20, 4);
-            graphDataX.put("valueT", dataPredict.get("trendLine"));
-            graphDataX.put("valueTP", dataPredict.get("predictionLine"));
-
-
-            LinkedList<DateTime> valueXPDate = getDateTimeSeries(valueXDate.getLast(), 20, property.getInterval() != null ? property.getInterval().intValue() : 10);
-            List<String> valueXP = valueXPDate.stream().map(MagmaTime::format).collect(Collectors.toList());
-            graphDataX.put("valueXP", valueXP);
-
-            graphData.add(graphDataX);
-        }
-        return graphData;
-    }
-
-    private LinkedList<DateTime> getDateTimeSeries(DateTime startDate, int noOfItems, int intervalMins) {
-        LinkedList<DateTime> valueXPDate = new LinkedList<>();
-
-        for (int i = 0; i < noOfItems; i++) {
-            valueXPDate.add(startDate.plusMinutes((i + 1) * intervalMins));
-        }
-        return valueXPDate;
-    }
-
-    public List<Offline> getOfflineAlertsOfKit(String kitId, String from, String to) {
-        Kit kit = kitService.findKitById(kitId);
-        if (kit == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-        }
-
-        Query query = new Query();
-        query.addCriteria(Criteria.where("kitId").is(kitId));
-
-        if (to != null && from != null) {
-            to += " 23:59";
-            from += " 00:00";
-            query.addCriteria(Criteria.where("startTime").gte(MagmaTime.parse(from)).lte(MagmaTime.parse(to)));
-        } else {
-            if (from != null) {
-                from += " 00:00";
-                query.addCriteria(Criteria.where("startTime").gte(MagmaTime.parse(from)));
-            }
-
-            if (to != null) {
-                to += " 23:59";
-                query.addCriteria(Criteria.where("startTime").lte(MagmaTime.parse(to)));
-            }
-        }
-
-        return mongoTemplate.find(query, Offline.class);
-    }
-
-    public SensorFailureValue createSensorFailureEntry(SensorFailureValue sensorFailureValue) {
-        if (!sensorFailureValue.validate()) {
-            throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
-        }
-        return sensorFailureValueRepository.save(sensorFailureValue);
-    }
-
-    public List<SensorFailureValue> getSensorFailureValues() {
-        return sensorFailureValueRepository.findAll();
+        property.setLabel(label);
+        propertyRepository.save(property);
+        return property;
     }
 
     public HashMap<String, DeviceSummary> getDevicesSummaryCall() {
@@ -1439,809 +969,116 @@ public class CoreService {
         }
     }
 
-    public String createProperties(String kitId, List<Property> properties) {
+    public List<Sensor> findSensorHistoryByKitAndNumber(String deviceId, Integer number, Direction direction, String from, String to) {
+        LOGGER.debug("Find Sensor request found Device : {}, Number : {}", deviceId, number);
 
-        Kit kit = kitService.findKitById(kitId);
-        if (!properties.isEmpty()) {
+        Device device = findDeviceById(deviceId);
 
-            if (!checkDuplicates(kitId, properties)) {
-                throw new MagmaException(MagmaStatus.DUPLICATE_INPUT);
-            }
+        if (device.getSensorCodes().length < number) {
+            throw new MagmaException(MagmaStatus.SENSOR_NOT_FOUND);
+        }
 
-            for (Property property : properties) {
-
-                if ((property.getNumber() == null) || (property.getCode() == null)) {
-                    throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
-                }
-                if (property.getTime() == null) {
-                    property.setTime(DateTime.now(DateTimeZone.forID("Asia/Colombo")));
-                }
-                property.setKitId(kitId);
-                property.setAlert(false);
-                property.setError(false);
-                kit.getPropertyMap().put(property.getNumber(), property);
-
-
-                if (property.getValue() != -9999.0 && property.getValue() != Double.MIN_VALUE && property.getValue() != Double.MAX_VALUE) {
-
-                    boolean timeElapsed = false;
-                    for (int level = 1; level <= kit.getAlertLevel(); level++) {
-
-                        AlertLimit alertLimit = alertLimitRepository.
-                                findByKitIdAndPropertyNumberAndLevel(kitId, property.getNumber(), level);
-
-                        if (kit.getAlerts().containsKey(level) && kit.getAlerts().get(level) &&
-                                (timeElapsed ||
-                                        (alertLimit != null && alertLimit.getStatus() == AlertStatus.ACTIVE && !alertLimit.checkValidity(property.getValue()))
-                                )) {
-
-                            LOGGER.debug("Kit Alert : {} Triggered Limit : {}, Time: {}, Value : {}", kit.getAlerts(), alertLimit, timeElapsed, property.getValue());
-
-                            property.setAlert(true);
-                            Integer diff = kit.getInterval() / 2;
-
-                            Alert alert = alertRepository
-                                    .findByAlertLimitKitIdAndAlertLimitPropertyNumberAndAlertLimitLevelAndEndTimeGreaterThanOrderByStartTimeDesc(
-                                            kitId, property.getNumber(), level, property.getTime().minusMinutes(kit.getInterval()));
-
-                            if (alert == null) {
-                                alert = new Alert(alertLimit, property.getTime().minusMinutes(diff), property.getTime().plusMinutes(diff));
-                            } else {
-                                alert.setAlertLimit(alertLimit);
-                                alert.setEndTime(property.getTime().plusMinutes(diff));
-                            }
-
-                            alert = alertRepository.save(alert);
-                            if (alertLimit.getCurrentLevelPeriod() == null
-                                    || alert.getTime().getStandardMinutes() > alertLimit.getCurrentLevelPeriod()) {
-                                try {
-                                    kitNotificationService.sendAlert(kit, alert);
-
-                                    alert.setAlertSent(true);
-                                    alertRepository.save(alert);
-                                } catch (Exception e) {
-                                    LOGGER.error("Exception Occurred :{} ", e.getStackTrace());
-                                }
-                            }
-
-                            //TODO: msg modifications for timeElapsed
-                            if (alertLimit.getNextLevelPeriod() != null
-                                    && alert.getTime().getStandardMinutes() > alertLimit.getNextLevelPeriod()) {
-                                timeElapsed = true;
-                            }
-                        } else {
-                            timeElapsed = false;
-                        }
-                    }
-                    dataTriggerService.triggerForProperty(property);
-                    propertyRepository.save(property);
-
-                } else {
-
-                    property.setError(true);
-
-                    Error error = errorRepository.
-                            findByKitIdAndPropertyNumberAndEndTimeGreaterThanOrderByStartTimeDesc(kit.getId(), property.getNumber(), property.getTime().minusMillis(kit.getInterval()));
-
-                    if (error == null) {
-                        error = new Error(kit.getId(), property.getNumber(), kit.getModifiedDate(), property.getTime().minusMillis(kit.getInterval() / 2));
-                    } else {
-                        error.setEndTime(property.getTime().plusMillis(kit.getInterval() / 2));
-                    }
-                    error = errorRepository.save(error);
-                    try {
-                        kitNotificationService.sendError(kit, error);
-                    } catch (Exception e) {
-                        LOGGER.error("Exception Occurred :{} ", e.getStackTrace());
-                    }
-                    property.setError(true);
-                }
-
-                if (!kit.getPropertyMap().containsKey(property.getNumber())
-                        || kit.getPropertyMap().get(property.getNumber()).getTime().isBefore(property.getTime())) {
-                    kit.getPropertyMap().put(property.getNumber(), property);
-                }
-
-                if (kit.getLastSeen() == null || kit.getLastSeen().isBefore(property.getTime())) {
-                    kit.setLastSeen(property.getTime());
-                }
-            }
-            ;
-            kitRepository.save(kit);
-            return "Successfully saved";
+        if (to == null && from == null) {
+            to = MagmaTime.format(MagmaTime.now());
+            from = MagmaTime.format(MagmaTime.now().minusDays(1));
+        } else if (to == null) {
+            to = from;
+            from += " 00:00";
+            to += " 23:59";
+        } else if (from == null) {
+            from = to;
+            from += " 00:00";
+            to += " 23:59";
         } else {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+            from += " 00:00";
+            to += " 23:59";
+        }
+
+
+        if (direction.isDescending()) {
+            return sensorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to));
+        } else {
+            return sensorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to));
         }
 
     }
 
-    public List<Property> populatePropertyWithModel(String kitId, String deviceId, Integer propertyNumber, String predictModel, String from, String to) {
+    public List<Actuator> findActuatorHistoryByKitAndNumber(String deviceId, Integer number, Direction direction, String from, String to) {
+        LOGGER.debug("Find Actuator history request found Device : {}, Number : {}", deviceId, number);
 
-        Kit kit = kitRepository.findOne(kitId);
+        Device device = findDeviceById(deviceId);
 
-        LOGGER.debug("Populate Kit Id : {}, Device Id : {}, Property : {},  From : {}, To : {}",
-                kitId, deviceId, propertyNumber, from, to);
-
-        if (!kit.getDevices().contains(deviceId)) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+        if (device.getSensorCodes().length < number) {
+            throw new MagmaException(MagmaStatus.SENSOR_NOT_FOUND);
         }
 
-        KitModel model = kit.getModel();
-
-
-        Optional<Operation> optional = model.getOperations().stream().filter(opera -> opera.getPropertyNumber().equals(propertyNumber)).findFirst();
-
-        if (!optional.isPresent()) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+        if (to == null && from == null) {
+            to = MagmaTime.format(MagmaTime.now());
+            from = MagmaTime.format(MagmaTime.now().minusDays(1));
+        } else if (to == null) {
+            to = from;
+            from += " 00:00";
+            to += " 23:59";
+        } else if (from == null) {
+            from = to;
+            from += " 00:00";
+            to += " 23:59";
+        } else {
+            from += " 00:00";
+            to += " 23:59";
         }
 
-        Operation operation = optional.get();
 
-        if (operation.getSensorNumberList().isEmpty()) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+        if (direction.isDescending()) {
+            return actuatorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to));
+        } else {
+            return actuatorRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to));
         }
 
-        Integer pivot = operation.getSensorNumberList().remove(0);
-        Integer offset = kit.getOffsetMap().get(deviceId).getSensor();
+    }
 
-        if (operation.getAggregation() != Aggregation.PREDICT) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
+    private Device findDeviceById(String deviceId) {
+        LOGGER.debug("Find Device request found : {}", deviceId);
+        Optional<Device> optionalDevice = deviceRepository.findById(deviceId);
 
-        List<Sensor> pivotSensors = sensorRepository
-                .findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(deviceId, pivot - offset, MagmaTime.parse(from), MagmaTime.parse(to));
-
-        List<PredictionInput> predictionInputs = new ArrayList<>();
-
-        List<SensorCode> mea = Arrays.asList(SensorCode.MEA, SensorCode.MEA0, SensorCode.MEA1, SensorCode.MEA2, SensorCode.MEA3);
-
-
-        pivotSensors.stream().forEach(pivotSensor -> {
-
-            try {
-
-                DateTime time = pivotSensor.getTime();
-                List<SensorPredict> sensorPredicts = new ArrayList<>();
-
-                if (mea.contains(pivotSensor.getCode())) {
-                    String[] meaTmp1 = pivotSensor.getValue().split("/");
-                    Float m1 = Float.parseFloat(meaTmp1[0]);
-                    sensorPredicts.add(SensorPredict.newBuilder().setNumber(1).setDate(time.getMillis()).setValue(m1).build());
-                    Float c1 = Float.parseFloat(meaTmp1[1]);
-                    sensorPredicts.add(SensorPredict.newBuilder().setNumber(2).setDate(time.getMillis()).setValue(c1).build());
-                } else {
-                    sensorPredicts.add(SensorPredict.newBuilder()
-                            .setNumber(pivotSensor.getNumber())
-                            .setDate(time.getMillis())
-                            .setValue(Float.parseFloat(pivotSensor.getValue()))
-                            .build());
-                }
-
-                operation.getSensorNumberList().forEach(other -> {
-                    Sensor otherSensor = sensorRepository.findByDeviceIdAndNumberAndTime(deviceId, other - offset, time);
-                    if (otherSensor == null) {
-                        LOGGER.info("No other : {} sensor found for : {}", other - offset, pivotSensor);
-                        return;
-                    }
-                    sensorPredicts.add(SensorPredict.newBuilder()
-                            .setNumber(otherSensor.getNumber() + 2)
-                            .setDate(time.getMillis())
-                            .setValue(Float.parseFloat(otherSensor.getValue()))
-                            .build());
-                });
-
-                predictionInputs.add(PredictionInput
-                        .newBuilder()
-                        .setModel(predictModel)
-                        .addAllSensors(sensorPredicts)
-                        .build());
-
-            } catch (Exception e) {
-                LOGGER.error("Can't Populate for Pivot : {}, Exception : {}", pivotSensor, e.getStackTrace());
+        if (optionalDevice.isPresent()) {
+            Device device = optionalDevice.get();
+            DeviceParameterConfiguration conf = deviceParameterConfigurationRepository.findByDevice(deviceId);
+            if (conf != null) {
+                device.setDeviceParameterConfiguration(conf);
             }
-
-        });
-
-        PredictionInputs inputs = PredictionInputs
-                .newBuilder()
-                .addAllInputs(predictionInputs)
-                .build();
-
-        SensorCode propertyCode = model.getProperties()[propertyNumber];
-
-        PredictionOutputs outputs = dataProcessorService.predict(predictModel, inputs);
-        return outputs.getOutputsList().stream().map(predictionOutput ->
-                        new Property(kitId,
-                                propertyNumber, propertyCode,
-                                new DateTime(predictionOutput.getDate()),
-                                (double) predictionOutput.getValue(),
-                                0.0))
-                .collect(Collectors.toList());
-    }
-
-
-    public String populateProperty(String kitId, String deviceId, Integer propertyNumber, String from, String to) {
-
-        Kit kit = kitRepository.findOne(kitId);
-
-        LOGGER.debug("Populate Kit Id : {}, Device Id : {}, Property : {},  From : {}, To : {}",
-                kitId, deviceId, propertyNumber, from, to);
-
-        if (!kit.getDevices().contains(deviceId)) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-
-        KitModel model = kit.getModel();
-
-        Optional<Operation> optional = model.getOperations().stream().filter(opera -> opera.getPropertyNumber().equals(propertyNumber)).findFirst();
-
-        if (!optional.isPresent()) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-
-        Operation operation = optional.get();
-
-        if (operation.getSensorNumberList().isEmpty()) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-
-        Integer pivot = operation.getSensorNumberList().remove(0);
-        Integer offset = kit.getOffsetMap().get(deviceId).getSensor();
-
-        List<Sensor> pivotSensors = sensorRepository
-                .findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(deviceId, pivot - offset, MagmaTime.parse(from), MagmaTime.parse(to));
-
-        pivotSensors.stream().forEach(pivotSensor -> {
-
-            try {
-
-                List<Sensor> sensors = new ArrayList<>();
-
-                DateTime time = pivotSensor.getTime();
-
-                operation.getSensorNumberList().forEach(other -> {
-                    Sensor otherSensor = sensorRepository.findByDeviceIdAndNumberAndTime(deviceId, other - offset, time);
-                    if (otherSensor == null) {
-                        LOGGER.info("No other : {} sensor found for : {}", other - offset, pivotSensor);
-                        return;
-                    }
-                    sensors.add(otherSensor);
-                });
-                sensors.add(pivotSensor);
-
-
-                SensorCode propertyCode;
-                switch (propertyNumber) {
-                    case -10:
-                        propertyCode = SensorCode.B;
-                        break;
-
-                    case -1:
-                        propertyCode = SensorCode.L;
-                        break;
-
-                    default:
-                        propertyCode = model.getProperties()[propertyNumber];
-                }
-
-                Property property;
-                Double value = -9999.0;
-                Double pivotValue = 0.0;
-
-
-                switch (operation.getAggregation()) {
-                    case ANY:
-                        for (Sensor sensor : sensors) {
-                            double dec = dataProcessorService.decode(propertyCode, operation, sensor, kit);
-                            if (dec != -9999) {
-                                value = dec;
-                                break;
-                            }
-                        }
-                        break;
-
-                    case MAX:
-                        value = Double.MIN_VALUE;
-
-                        for (Sensor sensor : sensors) {
-                            double dec = dataProcessorService.decode(propertyCode, operation, sensor, kit);
-                            if (dec != -9999 && dec > value) {
-                                value = dec;
-                            }
-                        }
-                        break;
-
-                    case MIN:
-                        value = Double.MAX_VALUE;
-
-                        for (Sensor sensor : sensors) {
-                            double dec = dataProcessorService.decode(propertyCode, operation, sensor, kit);
-                            if (dec != -9999 && dec < value) {
-                                value = dec;
-                            }
-                        }
-                        break;
-
-                    case AVG:
-                        double sum = 0;
-                        int times = 0;
-
-                        for (Sensor sensor : sensors) {
-                            double dec = dataProcessorService.decode(propertyCode, operation, sensor, kit);
-                            if (dec != -9999) {
-                                sum += dec;
-                                times++;
-                            }
-                        }
-                        if (times > 0) {
-                            value = sum / times;
-                        }
-                        break;
-
-                    case SUM:
-                        double total = 0;
-
-                        for (Sensor sensor : sensors) {
-                            double dec = dataProcessorService.decode(propertyCode, operation, sensor, kit);
-                            if (dec != -9999) {
-                                total += dec;
-                                value = 0.0;
-                            }
-                        }
-                        if (total != 0) {
-                            value = total;
-                        }
-                        break;
-
-                    case PREDICT:
-                        value = dataProcessorService.predict(propertyNumber, propertyCode, operation, sensors, kit);
-
-                }
-
-                switch (propertyCode) {
-                    case L:
-                        break;
-
-                    case B:
-                        if (value != -9999.0 && value != Double.MIN_VALUE && value != Double.MAX_VALUE) {
-                            property = new Property(kitId, propertyNumber, propertyCode, time, value, pivotValue);
-                            saveOrOverwrite(property);
-                        }
-                        break;
-
-                    case RF:
-                        if (value != -9999.0 && value != Double.MIN_VALUE && value != Double.MAX_VALUE) {
-
-                            Map<String, Object> params = operation.getParams();
-
-                            if (!params.containsKey("time")) {
-                                params.put("time", "00:01");
-                            }
-
-                            DateTime toRF = MagmaTime.getThisDayTime(time, (String) params.get("time"));
-                            DateTime fromRF = toRF.minusHours(6);
-
-                            Property last = propertyRepository.findByKitIdAndNumberAndTimeBetweenOrderByTimeDesc(
-                                    kit.getId(), operation.getPropertyNumber(), fromRF, toRF);
-
-                            LOGGER.debug("Last Data to Pivot : {}", last);
-
-                            if (last == null) {
-                                LOGGER.error("Didn't have prior data to calculate RF");
-                                pivotValue = value;
-                                value = 0.0;
-                            } else {
-                                pivotValue = value;
-                                value = value - last.getPivot();
-                            }
-                        }
-
-                    default:
-                        property = new Property(kitId, propertyNumber, propertyCode, time, value, pivotValue);
-                        property.setError(false);
-
-                        if (value != -9999.0 && value != Double.MIN_VALUE && value != Double.MAX_VALUE) {
-                            saveOrOverwrite(property);
-                        } else {
-                            property.setError(true);
-                            LOGGER.error("Property Error in Past :{} ", property);
-                        }
-                }
-
-            } catch (Exception e) {
-                LOGGER.error("Can't Populate for Pivot : {}, Exception : {}", pivotSensor, e.getStackTrace());
-            }
-
-        });
-
-        return "Successfully Populated";
-    }
-
-    private Property saveOrOverwrite(Property property) {
-        Property save = propertyRepository.findByKitIdAndNumberAndTime(property.getKitId(), property.getNumber(), property.getTime());
-        if (save != null) {
-            LOGGER.info("Overwrite Existing : {}, New : {}", save, property);
-            property.setId(save.getId());
-        }
-        return propertyRepository.save(property);
-    }
-
-    private boolean checkDuplicates(String kitId, List<Property> properties) {
-        int total = properties.size();
-        Random rand = new Random();
-
-        //Check First
-        if (!checkDuplicate(kitId, properties.get(0))) {
-            return false;
-        }
-
-        //Check Last
-        if (!checkDuplicate(kitId, properties.get(total - 1))) {
-            return false;
-        }
-
-        //Check Random Three
-        for (int i = 0; i < 3; i++) {
-            int randomIndex = rand.nextInt(total);
-            if (!checkDuplicate(kitId, properties.get(randomIndex))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean checkDuplicate(String kitId, Property property) {
-        return propertyRepository.findByKitIdAndNumberAndTime(
-                kitId,
-                property.getNumber(),
-                property.getTime()) == null;
-
-    }
-
-    public Property changeLabel(String deviceId, String label, String propertyId) {
-        Property property = propertyRepository.findOne(propertyId);
-        Device device = deviceRepository.findOne(deviceId);
-        if (device == null || property == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-        property.setLabel(label);
-        propertyRepository.save(property);
-        return property;
-    }
-
-    public List<Property> changeLabels(String deviceId, List<PropertyDTO> propertyDTOS) {
-        Device device = deviceRepository.findOne(deviceId);
-        if (device == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-        for (PropertyDTO propertyDTO : propertyDTOS) {
-            Property propertyDB = propertyRepository.findOne(propertyDTO.getId());
-            if (propertyDB == null) {
-                throw new MagmaException(MagmaStatus.INVALID_INPUT);
-            }
-        }
-        List<Property> labelChangedProperties = new ArrayList<>();
-        for (PropertyDTO propertyDTO : propertyDTOS) {
-            Property property = propertyRepository.findOne(propertyDTO.getId());
-            property.setLabel(propertyDTO.getLabel());
-            propertyRepository.save(property);
-            labelChangedProperties.add(property);
-        }
-        return labelChangedProperties;
-    }
-
-    //Connectivity Manager
-    public Map<String, Integer> getConnectivityProtocolDetails() {
-        Map<String, Integer> protocolDetails = new HashMap<>();
-        List<Device> allDevices = deviceRepository.findAll();
-        for (Device device : allDevices) {
-            if (device.getProtocol() == null) {
-                continue;
-            }
-            protocolDetails.putIfAbsent(device.getProtocol().toString(), 1);
-            protocolDetails.put(device.getProtocol().toString(), protocolDetails.get(device.getProtocol().toString()) + 1);
-        }
-        return protocolDetails;
-    }
-
-    public Map<String, Protocol> changeConnectivityProtocol(String deviceId, Protocol protocol) {
-        Device deviceDB = deviceRepository.findOne(deviceId);
-        if (deviceDB == null) {
+            return device;
+        } else {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
-        //Remove connectivity Protocol
-        if (protocol == null) {
-            deviceDB.setProtocol(null);
-        }
-
-        //Change another protocol
-        deviceDB.setProtocol(protocol);
-        deviceRepository.save(deviceDB);
-
-        Map<String, Protocol> response = new HashMap<>();
-        response.put(deviceId, deviceDB.getProtocol());
-
-        return response;
     }
 
-    public String changeStatusOfTheProtocol(List<Map<String, String>> statusConfigs) {
-        List<Map<String, String>> response = new ArrayList<>();
+    public String updateKitOfflineStatus(String kitId, boolean offlineStatus) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("id").is(kitId));
+        Update update = new Update();
+        update.set("offline", offlineStatus);
 
-        //Validate request body
-        for (Map<String, String> statusConfig : statusConfigs) {
-            if (!statusConfig.containsKey("deviceId") || !statusConfig.containsKey("status")) {
-                throw new MagmaException(MagmaStatus.INVALID_INPUT);
-            }
-            Device db = deviceRepository.findOne(statusConfig.get("deviceId"));
-            if (db == null) {
-                throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-            }
-            if (!statusConfig.get("status").equals("enabled") && !statusConfig.get("status").equals("disabled")) {
-                throw new MagmaException(MagmaStatus.INVALID_INPUT);
-            }
+        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, Kit.class);
+        if (updateResult.getMatchedCount() == 0) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
         }
-
-        //Modify Status
-        for (Map<String, String> statusConfig : statusConfigs) {
-            Device db = deviceRepository.findOne(statusConfig.get("deviceId"));
-            if (db.getReferences() == null || db.getProtocol() == null) {
-                continue;
-            }
-            db.getReferences().putIfAbsent("protocolStatus", statusConfig.get("status"));
-            db.getReferences().replace("protocolStatus", statusConfig.get("status"));
-            deviceRepository.save(db);
-        }
-        return "updated!";
+        return "Successfully Updated";
     }
-
-    //TODO:: Temp - have to remove
-    public List<Device> configureClients(Map<String, String> configs) {
-        List<Device> mod = new ArrayList<>();
-        for (String device : configs.keySet()) {
-            Device d = deviceRepository.findOne(device);
-            if (d != null) {
-                mod.add(d);
-                if (d.getReferences() == null) {
-                    d.setReferences(new HashMap<>());
-                }
-                d.getReferences().putIfAbsent("client", configs.get(device));
-                deviceRepository.save(d);
-            }
-        }
-        return mod;
-    }
-
-    //TODO::Have to add Required filters
-    public List<Map<String, String>> getClientsDeviceConnectivity() {
-        List<String> allClients = new ArrayList<>();
-        List<Device> allDevices = deviceRepository.findAll();
-        List<Map<String, String>> clientConnectivity = new ArrayList<>();
-        Protocol[] availableProtocols = Protocol.values();
-
-        //Collect client details
-        for (Device device : allDevices) {
-            if (device.getReferences() != null && device.getReferences().containsKey("client")) {
-                if (!allClients.contains(device.getReferences().get("client"))) {
-                    allClients.add(device.getReferences().get("client"));
-                }
-            }
-        }
-        //Prepare unique Map
-        for (String client : allClients) {
-            for (Protocol protocol : availableProtocols) {
-                Map<String, String> clientProtocol = new HashMap<>();
-                clientProtocol.put("client", client);
-                clientProtocol.put("protocol", protocol.toString());
-                clientProtocol.put("devices", "0");
-                clientProtocol.put("protocolStatus", "enabled");
-                clientConnectivity.add(clientProtocol);
-            }
-        }
-
-        //Produce Output
-        for (Device device : allDevices) {
-            if (device.getProtocol() == null || device.getReferences() == null || !device.getReferences().containsKey("client")) {
-                continue;
-            }
-            String deviceProtocol = device.getProtocol().toString();
-            String client = device.getReferences().get("client");
-
-            for (Map<String, String> clientProtocol : clientConnectivity) {
-                if (clientProtocol.get("client").equals(client) && clientProtocol.get("protocol").equals(deviceProtocol)) {
-                    clientProtocol.putIfAbsent("devices", "0");
-                    clientProtocol.put("devices", String.valueOf(Integer.parseInt(clientProtocol.get("devices")) + 1));
-                }
-                //Change status of Protocol
-                if (device.getReferences().containsKey("protocolStatus") && device.getReferences().get("protocolStatus").equals("disabled")) {
-                    clientProtocol.replace("protocolStatus", "disabled");
-                }
-
-            }
-        }
-
-        return clientConnectivity;
-    }
-
-    public void validateClientId(String client) {
-        //Validate Client Name
-        List<Device> allDevices = deviceRepository.findAll();
-        List<String> allClients = new ArrayList<>();
-
-        for (Device device : allDevices) {
-            if (device.getReferences() != null && device.getReferences().containsKey("client")) {
-                if (!allClients.contains(device.getReferences().get("client"))) {
-                    allClients.add(device.getReferences().get("client"));
-                }
-            }
-        }
-        if (!allClients.contains(client)) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-    }
-
-    public List<Device> devicesOfSpecificClient(String clientId) {
-        List<Device> allDevices = deviceRepository.findAll();
-        List<Device> devicesOfClient = new ArrayList<>();
-        for (Device device : allDevices) {
-            if (device.getReferences() != null && device.getReferences().containsKey("client") && device.getReferences().get("client").equals(clientId)) {
-                devicesOfClient.add(device);
-            }
-        }
-        return devicesOfClient;
-    }
-
-    public List<Map<String, String>> getClientDeviceConnectivity(String client) {
-        //Validate Client Name
-        validateClientId(client);
-
-        List<Device> allDevices = deviceRepository.findAll();
-        List<Map<String, String>> devicesOfClient = new ArrayList<>();
-        //Collect Devices details for that client
-        for (Device device : allDevices) {
-            if (device.getReferences() != null && device.getReferences().containsKey("client")) {
-                if (device.getReferences().get("client").equals(client)) {
-                    Map<String, String> deviceMap = new HashMap<>();
-                    deviceMap.put("deviceId", device.getId());
-                    if (device.getCreationDate() != null) {
-                        deviceMap.put("created", device.getCreationDate().toString());
-                    }
-
-                    if (device.getReferences() != null && device.getReferences().containsKey("protocolStatus")) {
-                        deviceMap.put("protocolStatus", device.getReferences().get("protocolStatus"));
-                    } else {
-                        deviceMap.put("protocolStatus", "not-configured");
-                    }
-                    devicesOfClient.add(deviceMap);
-                }
-            }
-        }
-        return devicesOfClient;
-    }
-
-    public Map<String, String> getConnectionDetailsOfDevice(String deviceID) {
-        //Validate DeviceID
-        Device deviceDB = deviceRepository.findOne(deviceID);
-        if (deviceDB == null) {
-            throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-        }
-
-        Map<String, String> response = new HashMap<>();
-
-        if (deviceDB.getProtocol() != null) {
-            response.put("Connectivity Protocol", deviceDB.getProtocol().toString());
-        } else {
-            response.put("Connectivity Protocol", "Not Configured");
-        }
-
-        if (deviceDB.getReferences() != null && deviceDB.getReferences().containsKey("client")) {
-            response.put("client", deviceDB.getReferences().get("client"));
-        } else {
-            response.put("client", "Not Configured");
-        }
-
-        //Protocol Wise Details
-        if (deviceDB.getProtocol() != null && deviceDB.getReferences() != null) {
-            String protocol = deviceDB.getProtocol().toString();
-            if (protocol.equals("HTTP") || protocol.equals("HTTPS")) {
-                response.put("access_key", deviceDB.getReferences().getOrDefault("access_key", "Not Configured"));
-            } else if (protocol.equals("MQTT")) {
-                if (deviceDB.getReferences().containsKey("MQTT_user_name") && deviceDB.getReferences().containsKey("MQTT_password")) {
-                    response.put("username", deviceDB.getReferences().get("username"));
-                    response.put("password", deviceDB.getReferences().get("password"));
-                    response.put("broker", mqttBrokerAddress);
-                } else {
-                    response.put("broker", mqttBrokerAddress);
-                    response.put("username", "Not Configured");
-                    response.put("password", "Not Configured");
-                }
-            } else {
-                response.put("message", "Service Not Implemented For This device");
-            }
-        }
-        return response;
-    }
-
-
-    public Map<String, String> generateConnectivityCredentials(Map<String, String> connectivityDetails) {
-        List<String> validProtocols = Stream.of(Protocol.values()).map(Protocol::name).collect(Collectors.toList());
-
-        //Validate RequestBody
-        if (connectivityDetails == null || !connectivityDetails.containsKey("clientId") || !connectivityDetails.containsKey("protocol") ||
-                !validProtocols.contains(connectivityDetails.get("protocol"))) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-        //validate Client Id
-        validateClientId(connectivityDetails.get("clientId"));
-
-        //Return Object
-        Map<String, String> response = new HashMap<>();
-
-        //Collect Devices Of SpecificClient
-        List<Device> devicesOfClient = devicesOfSpecificClient(connectivityDetails.get("clientId"));
-
-
-        //Generate Credentials and store In reference protocol wise
-        if (connectivityDetails.get("protocol").equals("HTTP")
-                || connectivityDetails.get("protocol").equals("HTTPS")
-                || connectivityDetails.get("protocol").equals("TCP")) {
-
-            String access_key = connectivityDetails.get("clientId") + getRandomCredentials(10);
-
-            for (Device device : devicesOfClient) {
-                if (device.getProtocol() != null & device.getProtocol().toString().equals(connectivityDetails.get("protocol"))) {
-                    device.getReferences().putIfAbsent("access_key", access_key);
-                    device.getReferences().replace("access_key", access_key);
-                }
-                deviceRepository.save(device);
-            }
-            response.put("access_key", access_key);
-
-            //TODO: Need to send those details to Each device
-
-            return response;
-
-        } else if (connectivityDetails.get("protocol").equals("MQTT")) {
-            String userName = connectivityDetails.get("clientId");
-            String password = getRandomCredentials(5);
-
-            for (Device device : devicesOfClient) {
-                if (device.getProtocol() != null & device.getProtocol().toString().equals(connectivityDetails.get("protocol"))) {
-                    device.getReferences().putIfAbsent("MQTT_user_name", userName);
-                    device.getReferences().replace("MQTT_password", password);
-                }
-                deviceRepository.save(device);
-            }
-
-            //Store In Vmq auth In DataBase
-            Vmq_acl_auth vmq_acl_auth = new Vmq_acl_auth();
-            vmq_acl_auth.setUsername(userName);
-            vmq_acl_auth.setPassword(password);
-            try {
-                verneMqService.createVmqAclAuth(vmq_acl_auth);
-                response.put("UserName", userName);
-                response.put("Password", password);
-            } catch (Exception e) {
-                response.put("Message", "Configuration Failed-Password Hash Error");
-            }
-
-            return response;
-        } else {
-            response.put("message", "Invalid Protocol");
-            return response;
-        }
-    }
-
-    private String getRandomCredentials(int len) {
-        String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-        StringBuilder salt = new StringBuilder();
-        Random rnd = new Random();
-        while (salt.length() < len) { // length of the random string.
-            int index = (int) (rnd.nextFloat() * SALTCHARS.length());
-            salt.append(SALTCHARS.charAt(index));
-        }
-        String saltStr = salt.toString();
-        return saltStr;
-    }
-
 }

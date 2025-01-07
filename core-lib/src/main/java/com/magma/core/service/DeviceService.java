@@ -1,11 +1,12 @@
 package com.magma.core.service;
 
-import com.magma.core.data.dto.DeviceDTO;
-import com.magma.core.data.entity.*;
+import com.magma.dmsdata.data.dto.DeviceDTO;
+import com.magma.dmsdata.data.entity.*;
+import com.magma.dmsdata.data.support.UserInfo;
+import com.magma.dmsdata.util.MagmaException;
+import com.magma.dmsdata.util.MagmaStatus;
 import com.magma.core.data.repository.*;
-import com.magma.core.data.support.UserInfo;
-import com.magma.core.util.MagmaException;
-import com.magma.core.util.MagmaStatus;
+import com.magma.util.MagmaResponse;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
 import org.slf4j.Logger;
@@ -14,6 +15,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,9 +37,6 @@ public class DeviceService {
     DeviceRepository deviceRepository;
 
     @Autowired
-    TestCaseRepository testCaseRepository;
-
-    @Autowired
     KitRepository kitRepository;
 
     @Autowired
@@ -46,9 +47,6 @@ public class DeviceService {
 
     @Autowired
     ProductTypesRepository productTypesRepository;
-
-    @Autowired
-    KitCoreService kitService;
 
     @Autowired
     SensorRepository sensorRepository;
@@ -70,11 +68,15 @@ public class DeviceService {
 
         Device device = new Device();
         UserInfo createdBy = new UserInfo();
+        LOGGER.debug("####User Id : {}", userId);
         UserInfo user = userConnectorService.findUser(userId);
+        LOGGER.debug("####User : {}", user);
 
-        BeanUtils.copyProperties(user, createdBy);
+        if (user != null) {
+            BeanUtils.copyProperties(user, createdBy);
+            device.setCreatedBy(createdBy);
+        }
         BeanUtils.copyProperties(deviceDTO, device);
-        device.setCreatedBy(createdBy);
 
         return deviceCreateLogic(device);
     }
@@ -84,7 +86,7 @@ public class DeviceService {
         if (!device.validate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
-        if (deviceRepository.findOne(device.getId()) != null) {
+        if (deviceRepository.findById(device.getId()).orElse(null) != null) {
             throw new MagmaException(MagmaStatus.DEVICE_ALREADY_EXISTS);
         }
 
@@ -120,14 +122,6 @@ public class DeviceService {
                 });
             });
         }
-
-        // if new device created , we have to add in batchNUmber 0
-        List<TestCase> testCases = testCaseRepository.findByBatchNumber(0);
-        testCases.forEach(testCase -> {
-            testCase.getDevices().add(device.getId());
-        });
-
-        testCaseRepository.save(testCases);
         device.setBatchNumber(device.getBatchNumber());
 
         return deviceRepository.save(device);
@@ -146,7 +140,7 @@ public class DeviceService {
             //Adding sensor codes,Actuator codes,persistence, protocol and connectivity if   device is added under senzmatica 3.0
             // dont un comment this, store these details to db when creating a device
 //            if(d.getProductType()!=null){
-//                ProductTypes deviceProductType = productTypesRepository.findOne(d.getProductType());
+//                ProductTypes deviceProductType = productTypesRepository.findById(d.getProductType()).orElse(null);
 //                d.setSensorCodes(deviceProductType.getSensorCodes());
 //                d.setActuatorCodes(deviceProductType.getActuatorCodes());
 //                d.setPersistence(deviceProductType.isPersistence());
@@ -158,52 +152,16 @@ public class DeviceService {
         return allDevices;
     }
 
-    public List<Device> findDevicesWithFavouriteOrder(String userId) {
-        LOGGER.debug("Find all Devices With Favourite Order request found For User:{}", userId);
-        return userFavouriteService.getAllDevicesWithFavouriteOrder(userId);
-    }
-
-
-    public List<String> findFavouriteDeviceIds(String userId) {
-        LOGGER.debug("Find Ids of Favourite devices - For User:{}", userId);
-        return userFavouriteService.getUserFavouriteDevices(userId);
-    }
-
-    public List<String> addFavouriteDevicesBulk(String userId, List<String> deviceIds) {
-        LOGGER.debug("Add Bulk FavouriteDevices for a user -{} , deviceIds -{}", userId, deviceIds);
-        return userFavouriteService.addBulkDevicesAsFavourite(userId, deviceIds);
-    }
-
-    public List<String> removeFavouriteDevicesBulk(String userId, List<String> deviceIds) {
-        LOGGER.debug("Remove Bulk FavouriteDevices for a user -{} , deviceIds -{}", userId, deviceIds);
-        return userFavouriteService.removeDevicesFromFavourite(userId, deviceIds);
-    }
-
-    public String editFavouriteDevices(String userId, String deviceId, String action) {
-        LOGGER.debug("{} Favourite Device  Request For User:{},Device Id:{}", action.toUpperCase(Locale.ROOT), userId, deviceId);
-
-        if (action.equals("add")) {
-            userFavouriteService.updateDeviceAsFavourite(userId, deviceId);
-            return "Successfully added as favourite";
-
-        } else if (action.equals("remove")) {
-            userFavouriteService.RemoveDeviceAsFavourite(userId, deviceId);
-            return "Successfully removed from favourite";
-        } else {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-    }
-
     public Device findDeviceById(String deviceId) {
         LOGGER.debug("Find Device request found : {}", deviceId);
-        Device device = deviceRepository.findOne(deviceId);
+        Device device = deviceRepository.findById(deviceId).orElse(null);
         if (device == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
 
         //Adding sensor codes,Actuator codes,persistence, protocol and connectivity if   device is added under senzmatica 3.0
         if (device.getProductType() != null) {
-            ProductTypes deviceProductType = productTypesRepository.findOne(device.getProductType());
+            ProductTypes deviceProductType = productTypesRepository.findById(device.getProductType()).orElse(null);
             device.setSensorCodes(deviceProductType.getSensorCodes());
             device.setActuatorCodes(deviceProductType.getActuatorCodes());
             device.setPersistence(deviceProductType.isPersistence());
@@ -211,16 +169,6 @@ public class DeviceService {
             device.setConnectivity(deviceProductType.getConnectivity());
         }
         return device;
-    }
-
-    public List<Device> findDevicesByIdIn(List<String> ids) {
-        LOGGER.debug("Find Devices request found : {}", ids);
-        return deviceRepository.findByIdIn(ids);
-    }
-
-    public List<Device> findDevicesByIdInAndOfflineIsTrue(List<String> ids) {
-        LOGGER.debug("Find Devices request found : {}", ids);
-        return deviceRepository.findByIdInAndOfflineIsTrue(ids);
     }
 
     public Device updateDevice(String deviceId, DeviceDTO deviceDTO) {
@@ -238,8 +186,10 @@ public class DeviceService {
         UserInfo user = userConnectorService.findUser(userId);
         UserInfo modifiedBy = new UserInfo();
 
-        BeanUtils.copyProperties(user, modifiedBy);
-        db.setModifiedBy(modifiedBy);
+        if(user != null) {
+            BeanUtils.copyProperties(user, modifiedBy);
+            db.setModifiedBy(modifiedBy);
+        }
 
         return deviceUpdateLogic(db, deviceDTO);
     }
@@ -344,13 +294,17 @@ public class DeviceService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Kit db = kitService.findKitById(kitId);
+        Kit db = kitRepository.findById(kitId).orElse(null);
+        if (db == null) {
+            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        }
+
         db.setPersistence(persistence);
 
         //TODO: Can update via MongoTemplate
         List<Device> devices = deviceRepository.findByIdIn(db.getDevices());
         devices.stream().forEach(device -> device.setPersistence(persistence));
-        deviceRepository.save(devices);
+        deviceRepository.saveAll(devices);
 
         kitRepository.save(db);
 
@@ -359,13 +313,13 @@ public class DeviceService {
 
     public String deleteDevice(String deviceId) {
         LOGGER.debug("Delete request found DeviceId : {}", deviceId);
-        deviceRepository.delete(deviceId);
+        deviceRepository.deleteById(deviceId);
         return "Successfully Updated";
     }
 
 
     public List<Sensor> getAllSensorDetailsByDeviceId(String deviceId) {
-        Device requestedDevice = deviceRepository.findById(deviceId);
+        Device requestedDevice = deviceRepository.findById(deviceId).orElse(null);
         if (requestedDevice == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
@@ -447,5 +401,10 @@ public class DeviceService {
         deviceRepository.save(db);
 
         return "Successfully Updated";
+    }
+
+    public List<String> findFavouriteDeviceIds(String userId) {
+        LOGGER.debug("Find Ids of Favourite devices - For User:{}", userId);
+        return userFavouriteService.getUserFavouriteDevices(userId);
     }
 }
