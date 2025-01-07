@@ -44,7 +44,7 @@ public class Geo {
     }
 
     public Geo(String location, String e) {
-        String tmp[] = location.split(e);
+        String[] tmp = location.split(e);
         lng = Double.parseDouble(tmp[1]);
         lat = Double.parseDouble(tmp[0]);
     }
@@ -143,10 +143,5 @@ public class Geo {
                 ", lng=" + lng +
                 ", relativeLocation=" + relativeLocation +
                 '}';
-    }
-
-    public void setLongitude(double d) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setLongitude'");
     }
 }

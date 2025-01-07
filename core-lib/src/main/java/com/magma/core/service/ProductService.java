@@ -1,12 +1,12 @@
 package com.magma.core.service;
 
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.core.data.dto.ProductDTO;
-import com.magma.core.data.dto.ProductTypeDTO;
-import com.magma.core.data.entity.*;
+import com.magma.dmsdata.data.dto.ProductDTO;
+import com.magma.dmsdata.data.dto.ProductTypeDTO;
+import com.magma.dmsdata.data.entity.*;
+import com.magma.dmsdata.data.support.*;
+import com.magma.dmsdata.util.*;
 import com.magma.core.data.repository.*;
-import com.magma.core.data.support.*;
-import com.magma.core.util.*;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -109,7 +109,7 @@ public class ProductService {
     // Validate device IDs in the request
     private void validateDeviceIds(List<String> deviceIds) {
         for (String deviceId : deviceIds) {
-            Device device = deviceRepository.findOne(deviceId);
+            Device device = deviceRepository.findById(deviceId).orElse(null);
             if (device == null) {
                 throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
             }
@@ -141,7 +141,7 @@ public class ProductService {
         logger.debug("Edit Product Request for product Id: {}", productId);
 
         // Validation of the product
-        ProductCore productDB = productRepository.findOne(productId);
+        ProductCore productDB = productRepository.findById(productId).orElse(null);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -260,7 +260,7 @@ public class ProductService {
     public ProductCore findProduct(String productId) {
         logger.debug("GET Request to find a product, product id:{}", productId);
 
-        ProductCore productDB = productRepository.findOne(productId);
+        ProductCore productDB = productRepository.findById(productId).orElse(null);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
@@ -304,86 +304,12 @@ public class ProductService {
     }
 
     public List<ProductTypes> addNewProductTypes(List<ProductTypes> productTypes) {
-        List<ProductTypes> savedProducts = productTypesRepository.save(productTypes);
+        List<ProductTypes> savedProducts = productTypesRepository.saveAll(productTypes);
         return savedProducts;
     }
 
     public List<ProductTypes> getAllProductTypes() {
         return productTypesRepository.findAll();
-    }
-
-    public String deleteProductTypes(String productTypesId) {
-        productTypesRepository.delete(productTypesId);
-        return "Successfully Deleted";
-    }
-
-    public ProductTypes updateProductTypes(String productTypesId, ProductTypes productTypes) {
-        ProductTypes requestedProduct = productTypesRepository.findOne(productTypesId);
-        if (requestedProduct == null) {
-            throw new MagmaException(MagmaStatus.NOT_FOUND);
-        } else {
-            requestedProduct.setDeviceCategory(productTypes.getDeviceCategory());
-            productTypesRepository.save(requestedProduct);
-        }
-        return requestedProduct;
-    }
-
-    public ProductCore changeStatusOfTheVersion(String productId, String versionNum, ProductStatus status, String changedBy) {
-        logger.debug("Change Version Of the Product for Product:{} Version:{} New Status:{} ChangedBy:{}", productId, versionNum, status, changedBy);
-
-        DateTime dateTimeNow = MagmaTime.now();
-        List<Device> devicesWithProduct = deviceRepository.findByProductProductId(productId);
-
-        for (Device device : devicesWithProduct) {
-
-
-            ProductData product = device.getProduct();
-            if (product != null) {
-                String availableProductVersionsString = product.getAvailableProductVersions();
-                Set<String> uniqueVersions = new HashSet<>(Arrays.asList(availableProductVersionsString.substring(1, availableProductVersionsString.length() - 1).split(", ")));
-                // Check if the new version is not already in the set
-                if (!uniqueVersions.contains(versionNum)) {
-                    // Add the new version to the set
-                    uniqueVersions.add(versionNum);
-                    product.setAvailableProductVersions(uniqueVersions.toString());
-                }
-
-                if (Objects.equals(product.getCurrentProductVersion(), versionNum)) {
-                    product.setCurrentVersionStatus(String.valueOf(status));
-                }
-                device.setProduct(product);
-                deviceRepository.save(device);
-            }
-        }
-
-        //Validation of Product
-        ProductCore product = productRepository.findOne(productId);
-        if (product == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-        //Validation of Version Number
-        List<ProductVersion> matchVersions = product.getVersions().stream().filter(productVersion -> productVersion.getVersionNum().equals(versionNum)).collect(Collectors.toList());
-        if (matchVersions.isEmpty()) {
-            throw new MagmaException(MagmaStatus.PRODUCT_VERSION_NOT_FOUND);
-        }
-        matchVersions.get(0).setStatus(status);
-        matchVersions.get(0).setStatusChangedBy(changedBy);
-
-        //Change In  Associated devices
-        List<Device> allDevices = deviceRepository.findAll();
-        for (Device d : allDevices) {
-            ProductData productData = d.getProduct();
-
-            if (productData != null && productData.getProductId().equals(productId)
-                    && productData.getCurrentProductVersion().equals(versionNum)) {
-                productData.setActionBy(changedBy);
-                productData.setDate(dateTimeNow.toString());
-                productData.setCurrentVersionStatus(status.toString());
-                d.setProduct(productData);
-            }
-        }
-        deviceRepository.save(allDevices);
-        return productRepository.save(product);
     }
 
     private void sendMessageToDevice(String deviceId, String message, String versionNumber, DeviceParameterConfiguration deviceParameterConfigurationDb, String productId) {
@@ -408,7 +334,7 @@ public class ProductService {
             try {
                 mqttGateway.send(topic, true, message);
                 changeTestResultsOfDeviceInsideVersion(productId, versionNumber, deviceId, TestResult.PENDING);
-                Message existingMessage = messageRepository.findById(deviceId + "-" + (maxTopicNumber + 1));
+                Message existingMessage = messageRepository.findById(deviceId + "-" + (maxTopicNumber + 1)).orElse(null);
                 if (existingMessage != null) {
                     existingMessage.setMessage(message);
                     messageRepository.save(existingMessage);
@@ -440,7 +366,7 @@ public class ProductService {
         }
 
         // Retrieve the product information from the database
-        ProductCore productDB = productRepository.findOne(productId);
+        ProductCore productDB = productRepository.findById(productId).orElse(null);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -453,7 +379,7 @@ public class ProductService {
 
         // Iterate through the list of affected devices and perform necessary updates
         for (String deviceId : deviceIds) {
-            Device device = deviceRepository.findOne(deviceId);
+            Device device = deviceRepository.findById(deviceId).orElse(null);
             if (device != null) {
                 // Retrieve product data for the device
                 ProductData productData = device.getProduct();
@@ -545,7 +471,7 @@ public class ProductService {
             return;
         }
 
-        ProductCore productDB = productRepository.findOne(productId);
+        ProductCore productDB = productRepository.findById(productId).orElse(null);
         if (productDB == null) {
             logger.debug("update Device's Product version request, Product Not Found");
             return;
@@ -572,7 +498,7 @@ public class ProductService {
         //Update Device's Product details and send Message
         for (String deviceId : deviceIds) {
 
-            Device device = deviceRepository.findOne(deviceId);
+            Device device = deviceRepository.findById(deviceId).orElse(null);
             if (device != null) {
 
                 if (device.getProduct() == null) {
@@ -680,40 +606,8 @@ public class ProductService {
         }
     }
 
-    public String updateDeviceProductVersionBulk(List<ProductDTO> productDTOS, String actionBy) {
-        logger.debug("update Device's Product version Bulk request");
-
-        //Validation of Product Ids and Validation of versions
-        for (ProductDTO productDTO : productDTOS) {
-            ProductCore productDB = findProduct(productDTO.getProductId());
-            List<ProductVersion> version = productDB.getVersions().stream().filter(productVersion -> productVersion.getVersionNum().equals(productDTO.getVersion().getVersionNum())).collect(Collectors.toList());
-            if (version.isEmpty()) {
-                throw new MagmaException(MagmaStatus.PRODUCT_VERSION_NOT_FOUND);
-            }
-        }
-
-        // Update Version
-        for (ProductDTO productDTO : productDTOS) {
-            try {
-                updateDeviceProductVersion(
-                        productDTO.getVersion().getDevices(),
-                        productDTO.getProductId(),
-                        productDTO.getVersion().getVersionNum(),
-                        productDTO.getVersion().getMajorVersionUpgrade(),
-                        actionBy
-                );
-            } catch (Exception e) {
-                logger.error("Error updating product version for productId: {}, versionNum: {}", productDTO.getProductId(), productDTO.getVersion().getVersionNum(), e);
-                throw new MagmaException(MagmaStatus.EXCEPTION_IN_PRODUCT_VERSION_UPGRADE);
-            }
-        }
-
-        // If the loop completes without any errors, return success message
-        return "Product Versions are Updated!!";
-    }
-
     public void changeTestResultsOfDeviceInsideVersion(String productId, String version, String deviceId, TestResult result) {
-        ProductCore product = productRepository.findOne(productId);
+        ProductCore product = productRepository.findById(productId).orElse(null);
         if (product == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -752,7 +646,7 @@ public class ProductService {
         logger.debug("Device -{} To System Message to Update the product version of device", tempDeviceId);
 
         // Retrieve the current device information
-        Device currentDevice = Optional.ofNullable(deviceRepository.findOne(tempDeviceId))
+        Device currentDevice = Optional.ofNullable(deviceRepository.findById(tempDeviceId).orElse(null))
                 .orElseGet(() -> deviceRepository.findByCustomPublishTopicOrCustomRemoteTopic(tempDeviceId));
 
         // Check if the device is found
@@ -762,7 +656,7 @@ public class ProductService {
 
         // Extract relevant information from the current device
         String deviceId = currentDevice.getId();
-        ProductData product = productDataRepository.findOne(deviceId);
+        ProductData product = productDataRepository.findById(deviceId).orElse(null);
 
         logger.debug("New current version OTA download Success");
         changeTestResultsOfDeviceInsideVersion(currentDevice.getProduct().getProductId(), product.getCurrentProductVersion(), deviceId, TestResult.SUCCESS);
@@ -773,7 +667,7 @@ public class ProductService {
         logger.debug("Current Version Number:{} ", product.getCurrentProductVersion());
 
         // Retrieve the list of versions associated with the product
-        List<ProductVersion> versions = productRepository.findOne(product.getProductId()).getVersions();
+        List<ProductVersion> versions = productRepository.findById(product.getProductId()).orElse(null).getVersions();
         ProductVersion currentVersion = versions.stream()
                 .filter(version -> version.getVersionNum().equals(product.getCurrentProductVersion()))
                 .collect(Collectors.toList()).get(0);
@@ -810,92 +704,6 @@ public class ProductService {
         deviceRepository.save(currentDevice);
     }
 
-
-    //Get Devices According to the product related filters
-    public List<Device> devicesWithRequiredFilters(List<String> deviceIds, String productType,
-                                                   String versionStatus, String currentVersion,
-                                                   List<String> previousDeviceVersion,
-                                                   String clientName) {
-        logger.debug("Get devices with required product filters deviceIds:{},productType:{},versionStatus:{}," +
-                "currentVersion:{},previousVersions:{},client:{}", deviceIds, productType, versionStatus, currentVersion, previousDeviceVersion, clientName);
-
-
-        List<Device> devicesToReturn = new ArrayList<>();
-
-        //Fetch Only Required Devices
-        if (deviceIds == null || deviceIds.isEmpty() || (deviceIds.size() == 1 && deviceIds.get(0).equals("[]"))) {
-            devicesToReturn = deviceRepository.findAll();
-        } else {
-            devicesToReturn = deviceRepository.findByIdIn(deviceIds);
-        }
-
-        //Ignore Other filters
-        if (productType == null && versionStatus == null && currentVersion == null && previousDeviceVersion == null && clientName == null) {
-            return devicesToReturn;
-        }
-
-        List<Device> devicesToRemove = new ArrayList<>();
-
-        for (Device device : devicesToReturn) {
-            ProductData product = device.getProduct();
-
-            //Any filter Not applicable
-            if (product == null) {
-                devicesToRemove.add(device);
-                continue;
-            }
-
-            // Product type filter
-            if (productType != null && product.getProductType() == null) {
-                devicesToRemove.add(device);
-            }
-            if (productType != null && product.getProductType() != null && !product.getProductType().equals(productType)) {
-                devicesToRemove.add(device);
-            }
-
-
-            //Client Filter
-            if (clientName != null && (device.getReferences() == null || !device.getReferences().containsKey("client"))) {
-                devicesToRemove.add(device);
-            }
-            if (clientName != null && device.getReferences() != null && device.getReferences().containsKey("client") && !device.getReferences().get("client").equals(clientName)) {
-                devicesToRemove.add(device);
-            }
-
-            // Product version filter
-            if (currentVersion != null && product.getCurrentProductVersion() == null) {
-                devicesToRemove.add(device);
-            }
-            if (currentVersion != null && product.getCurrentProductVersion() != null && !product.getCurrentProductVersion().equals(currentVersion)) {
-                devicesToRemove.add(device);
-            }
-
-// Product version status filter
-            if (versionStatus != null && product.getCurrentVersionStatus() == null) {
-                devicesToRemove.add(device);
-            }
-            if (versionStatus != null && product.getCurrentVersionStatus() != null && !product.getCurrentVersionStatus().equals(versionStatus)) {
-                devicesToRemove.add(device);
-            }
-
-// Previous versions filter
-            if (previousDeviceVersion != null && !previousDeviceVersion.isEmpty() && product.getAllProductVersionsOfDevice() == null) {
-                devicesToRemove.add(device);
-            }
-            if (previousDeviceVersion != null && !previousDeviceVersion.isEmpty() && product.getAllProductVersionsOfDevice() != null) {
-                List<String> existingVersionsInDevice = Arrays.asList(product.getAllProductVersionsOfDevice().split(","));
-                for (String filterVersion : previousDeviceVersion) {
-                    if (!existingVersionsInDevice.contains(filterVersion)) {
-                        devicesToRemove.add(device);
-                    }
-                }
-            }
-
-        }
-        devicesToReturn.removeAll(devicesToRemove);
-        return devicesToReturn;
-    }
-
     // Get remote configurations of the  for a given productId
     public List<ProductParameter> getRemoteConfigurationsByProductTypeCategoryVersion(ProductType productType, DeviceCategory deviceCategory, String version) {
         ProductCore product = productRepository.findByProductTypeAndDeviceCategory(productType, deviceCategory);
@@ -921,21 +729,22 @@ public class ProductService {
 
     // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION ----------------------------------------
 
-    public ProductTypes addOneProductType(ProductTypeDTO productTypes) {
-        if (!productTypes.addValidate()) {
+    public ProductTypes addOneProductType(ProductTypeDTO productTypeDTO) {
+        logger.debug("Add new Product Type Request Found: {}", productTypeDTO);
+        if (!productTypeDTO.addValidate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
-        ProductTypes existingProductType = productTypesRepository.findByProductName(productTypes.getProductName());
+        ProductTypes existingProductType = productTypesRepository.findByProductName(productTypeDTO.getProductName());
         if (existingProductType != null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_ALREADY_EXIST);
         }
-        ProductTypes productType = new ProductTypes();
-        BeanUtils.copyProperties(productTypes, productType);
+        ProductTypes productType = new ProductTypes(productTypeDTO.getProductName());
+        BeanUtils.copyProperties(productTypeDTO, productType);
         return productTypesRepository.save(productType);
     }
 
     public ProductTypes updateProductType(String productTypeId, ProductTypeDTO productTypeDTO) {
-        ProductTypes requestedProductType = productTypesRepository.findOne(productTypeId);
+        ProductTypes requestedProductType = productTypesRepository.findById(productTypeId).orElse(null);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
@@ -943,19 +752,34 @@ public class ProductService {
         if (!productTypeDTO.validate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
-        ProductTypes existingProductType = productTypesRepository.findByProductName(productTypeDTO.getProductName());
-        if (existingProductType != null && !existingProductType.getId().equals(productTypeDTO.getId())) {
-            throw new MagmaException(MagmaStatus.PRODUCT_TYPE_ALREADY_EXIST);
+//        ProductTypes existingProductType = productTypesRepository.findByProductName(productTypeDTO.getProductName());
+//        if (existingProductType != null && !existingProductType.getId().equals(productTypeDTO.getId())) {
+//            throw new MagmaException(MagmaStatus.PRODUCT_TYPE_ALREADY_EXIST);
+//        }
+        if(productTypeDTO.getSensorCodes() != null) {
+            requestedProductType.setSensorCodes(productTypeDTO.getSensorCodes());
+        }
+        if(productTypeDTO.getActuatorCodes() != null) {
+            requestedProductType.setActuatorCodes(productTypeDTO.getActuatorCodes());
+        }
+        if(productTypeDTO.getConnectivity() != null) {
+            requestedProductType.setConnectivity(productTypeDTO.getConnectivity());
+        }
+        if(productTypeDTO.getProtocol() != null) {
+            requestedProductType.setProtocol(productTypeDTO.getProtocol());
+        }
+        if(productTypeDTO.getCodecName() != null) {
+            requestedProductType.setCodecName(productTypeDTO.getCodecName());
+        }
+        if(productTypeDTO.isTranscoder() != requestedProductType.isTranscoder()) {
+            requestedProductType.setTranscoder(productTypeDTO.isTranscoder());
         }
 
-        ProductTypes productTypes = new ProductTypes();
-        BeanUtils.copyProperties(productTypeDTO, productTypes);
-
-        return productTypesRepository.save(productTypes);
+        return productTypesRepository.save(requestedProductType);
     }
 
     public ProductTypes getOneProductTypeById(String productTypeId) {
-        ProductTypes requestedProductType = productTypesRepository.findOne(productTypeId);
+        ProductTypes requestedProductType = productTypesRepository.findById(productTypeId).orElse(null);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
@@ -963,12 +787,12 @@ public class ProductService {
     }
 
     public String deleteOneProductType(String productTypeId) {
-        ProductTypes requestedProductType = productTypesRepository.findOne(productTypeId);
+        ProductTypes requestedProductType = productTypesRepository.findById(productTypeId).orElse(null);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
 
-        productTypesRepository.delete(productTypeId);
+        productTypesRepository.deleteById(productTypeId);
         return "Success";
     }
 

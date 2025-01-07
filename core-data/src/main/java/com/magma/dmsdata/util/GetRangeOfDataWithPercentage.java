@@ -68,7 +68,7 @@ public class GetRangeOfDataWithPercentage {
 
     public List<Double> cleanData(List<Double> data) {
         List<Double> cleanedData = data.stream().filter(
-                        value -> (Double.compare(this.propertyMax, value) > 0) && (Double.compare(this.propertyMin, value) < 0))
+                value -> (Double.compare(this.propertyMax, value) > 0) && (Double.compare(this.propertyMin, value) < 0))
                 .collect(Collectors.toList());
         return cleanedData;
 

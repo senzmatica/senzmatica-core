@@ -1,17 +1,15 @@
 package com.magma.dmsdata.data.support;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.magma.dmsdata.util.DeviceCategory;
-import com.magma.dmsdata.util.ProductType;
-import com.magma.util.MagmaDateTimeSerializer;
-import org.joda.time.DateTime;
 import org.springframework.data.annotation.Id;
 
+import com.magma.dmsdata.util.DeviceCategory;
+import com.magma.dmsdata.util.ProductType;
+
 import java.util.List;
+import java.util.Map;
 
 public class DeviceParameterConfiguration {
 
-    private List<String> deviceIds;
     @Id
     private String device;
     private ProductType productType;
@@ -19,18 +17,10 @@ public class DeviceParameterConfiguration {
     private DeviceCategory deviceCategory;
     private List<ProductParameter> remoteConfigurations;
 
+    private Map<String, List<String>> joinParameters;
+
     private List<DeviceParameterConfigurationHistory> updateHistory;
-
-    @JsonSerialize(using = MagmaDateTimeSerializer.class)
-    private DateTime createdDate;
-
-    public List<String> getDeviceIds() {
-        return deviceIds;
-    }
-
-    public void setDeviceIds(List<String> deviceIds) {
-        this.deviceIds = deviceIds;
-    }
+    private String serverIpAddress;
 
     public ProductType getProductType() {
         return productType;
@@ -80,14 +70,6 @@ public class DeviceParameterConfiguration {
         this.updateHistory = updateHistory;
     }
 
-    public DateTime getCreatedDate() {
-        return createdDate;
-    }
-
-    public void setCreatedDate(DateTime createdDate) {
-        this.createdDate = createdDate;
-    }
-
     public String getServerIpAddress() {
         return serverIpAddress;
     }
@@ -96,5 +78,12 @@ public class DeviceParameterConfiguration {
         this.serverIpAddress = serverIpAddress;
     }
 
-    private String serverIpAddress;
+    public Map<String, List<String>> getJoinParameters() {
+        return joinParameters;
+    }
+
+    public void setJoinParameters(Map<String, List<String>> joinParameters) {
+        this.joinParameters = joinParameters;
+    }
+
 }

@@ -1,7 +1,7 @@
 package com.magma.core.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.magma.core.data.support.DataHTTP;
+import com.magma.dmsdata.data.support.DataHTTP;
 import com.magma.core.service.DataProcessorService;
 import org.json.JSONObject;
 import org.slf4j.Logger;

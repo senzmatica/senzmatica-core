@@ -7,7 +7,7 @@
     <parent>
         <artifactId>magma-core</artifactId>
         <groupId>com.magma.core</groupId>
-        <version>1.1.0.0</version>
+        <version>1.2.0.0</version>
     </parent>
 
     <artifactId>core-test</artifactId>
@@ -25,7 +25,7 @@
         <dependency>
             <groupId>com.magma.core</groupId>
             <artifactId>core-lib</artifactId>
-            <version>1.1.0.0</version>
+            <version>1.2.0.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

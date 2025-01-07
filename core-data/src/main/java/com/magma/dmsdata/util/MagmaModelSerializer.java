@@ -26,7 +26,7 @@ public class MagmaModelSerializer extends JsonSerializer<KitModel> {
         if (value.getBatteryEnabled() != null) {
             gen.writeBooleanField("batteryEnabled", value.getBatteryEnabled());
         }
-        gen.writeStringField("type", value.getType().name());
+        gen.writeStringField("type", value.getType());
         gen.writeEndObject();
     }
 }

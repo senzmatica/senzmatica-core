@@ -1,9 +1,9 @@
 package com.magma.dmsdata.util;
 
+import java.util.*;
+
 import com.magma.dmsdata.data.entity.KitModel;
 import com.magma.dmsdata.data.support.Operation;
-
-import java.util.*;
 
 public class KitUtil {
 

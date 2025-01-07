@@ -1,0 +1,106 @@
+-#!/bin/sh
+
+export LC_COLLATE=C
+
+chmod 600 /home/azureuser/keys/test001_key.pem
+
+# SSH into the CentOS VM and execute build script
+ssh -i /home/azureuser/keys/test001_key.pem azureuser@20.51.244.28 << 'EOF'
+cd /home/azureuser/magma/magma-core/magma-service
+
+# Store previous version if it exists
+PREVIOUS_VERSION=$(</home/azureuser/magma/core.txt)
+
+# The value of PREVIOUS_VERSION
+echo "Previous version: $PREVIOUS_VERSION"
+
+git fetch
+git checkout service_separation
+
+# Pull changes from the remote repository
+git pull  origin service_separation
+
+
+# Extract the version from the pom.xml file
+VERSION=$(grep -oPm1 "(?<=<version>)[^<]+" pom.xml)
+
+# The value of PREVIOUS_VERSION
+echo "Current version: $VERSION"
+
+if [[ "$VERSION" != "$PREVIOUS_VERSION" ]]; then
+
+# Create a tarball of the project with the version
+TAR_NAME="magma-core-$VERSION.tar.gz"
+cd /home/azureuser/magma
+tar -czf "$TAR_NAME" magma-core
+
+# Move the tarball to the rpmbuild directory
+mv "$TAR_NAME" /home/azureuser/rpmbuild/SOURCES
+
+# Update the .txt file with the new version
+echo "$VERSION" > core.txt
+
+# Copy spec file from resources to rpmbuild/SPECS directory
+cd /home/azureuser/magma/magma-core/magma-service/src/main/resources
+cp magma-core.spec /home/azureuser/rpmbuild/SPECS/magma-core.spec
+
+# Update the Version field in the spec file
+sed -i "s/^Version:.*$/Version:        $VERSION/" /home/azureuser/rpmbuild/SPECS/magma-core.spec
+
+
+# Move to SPECS directory to create  RPM package
+cd /home/azureuser/rpmbuild/SPECS
+rpmlint /home/azureuser/rpmbuild/SPECS/magma-core.spec
+rpmbuild -ba /home/azureuser/rpmbuild/SPECS/magma-core.spec
+echo "RPM created successfully."
+
+
+#Check  yum repo has been created or not
+if [ -d /var/www/html/corerepo ]; then
+
+echo " corerepo directory found"
+cd /home/azureuser/rpmbuild/RPMS/noarch
+sudo cp magma-core-$VERSION-1.el7.noarch.rpm /var/www/html/corerepo
+cd /var/www/html/corerepo
+sudo rm -r repodata
+sudo createrepo /var/www/html/corerepo
+
+else
+echo "No corerepo directory found. So creating it."
+cd /var/www/html
+sudo mkdir corerepo
+sudo chmod -R +r /var/www/html/corerepo/
+sudo restorecon -Rv /var/www/html/corerepo/
+cd /home/azureuser/rpmbuild/RPMS/noarch
+sudo cp magma-core-$VERSION-1.el7.noarch.rpm /var/www/html/corerepo
+cd /var/www/html/corerepo
+sudo rm -r repodata
+sudo createrepo /var/www/html/corerepo
+fi
+
+# check .repo file has been created
+cd /etc/yum.repos.d
+if [ -f /etc/yum.repos.d/corerepo.repo ]; then
+echo " corerepo .repo file found"
+
+else
+echo " umsrepo .repo file not found"
+sudo cp /home/azureuser/magma/magma-ums/magma-service/src/main/resources/corerepo.repo /etc/yum.repos.d/corerepo.repo
+fi
+
+# Add version tag to Git
+cd /home/azureuser/magma/magma-core/magma-service
+git pull origin service_separation
+
+# Add version tag to Git
+git tag -a $VERSION -m "Release version $VERSION"
+
+
+# Push changes and tags to the Git repository
+git push origin service_separation --tags
+
+else
+  echo "Version in pom.xml hasn't changed. Skipping RPM creation."
+fi
+
+EOF

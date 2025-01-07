@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.data.support.Operation;
 import com.magma.dmsdata.util.ActuatorCode;
-import com.magma.dmsdata.util.KitType;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaUtil;
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
@@ -22,16 +22,15 @@ public class KitModel {
 
     @Id
     private String id;
-
     private String name;
 
     private Integer noOfSensors;
 
-    private String[] sensors;
+    private SensorCode[] sensors;
 
     private Integer noOfProperties;
 
-    private String[] properties;
+    private SensorCode[] properties;
 
     private Integer noOfActuators;
 
@@ -56,7 +55,7 @@ public class KitModel {
 
     private Boolean lbsEnabled;
 
-    private KitType type;
+    private String type;
 
     @JsonIgnore
     @CreatedDate
@@ -107,11 +106,11 @@ public class KitModel {
         this.noOfSensors = noOfSensors;
     }
 
-    public String[] getSensors() {
+    public SensorCode[] getSensors() {
         return sensors;
     }
 
-    public void setSensors(String[] sensors) {
+    public void setSensors(SensorCode[] sensors) {
         this.sensors = sensors;
     }
 
@@ -123,11 +122,11 @@ public class KitModel {
         this.noOfProperties = noOfProperties;
     }
 
-    public String[] getProperties() {
+    public SensorCode[] getProperties() {
         return properties;
     }
 
-    public void setProperties(String[] properties) {
+    public void setProperties(SensorCode[] properties) {
         this.properties = properties;
     }
 
@@ -211,11 +210,11 @@ public class KitModel {
         this.lbsEnabled = lbsEnabled;
     }
 
-    public KitType getType() {
+    public String getType() {
         return type;
     }
 
-    public void setType(KitType type) {
+    public void setType(String type) {
         this.type = type;
     }
 
@@ -258,10 +257,5 @@ public class KitModel {
                 ", creationDate=" + creationDate +
                 ", modifiedDate=" + modifiedDate +
                 '}';
-    }
-
-    public KitModel orElseThrow(Object object) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'orElseThrow'");
     }
 }

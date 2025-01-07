@@ -1,6 +1,6 @@
 package com.magma.test.service;
 
-import com.magma.core.util.Granularity;
+import com.magma.dmsdata.util.Granularity;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.junit.Test;

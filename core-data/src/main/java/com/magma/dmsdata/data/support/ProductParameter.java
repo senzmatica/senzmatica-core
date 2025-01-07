@@ -1,6 +1,5 @@
 package com.magma.dmsdata.data.support;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -18,8 +17,6 @@ public class ProductParameter {
 
     private String defaultValue;
 
-    private List<String> joinParameter;
-
     private Set<String> defaultValues;
 
     public ProductParameter() {
@@ -31,10 +28,6 @@ public class ProductParameter {
 
     public void setParameter(String parameter) {
         this.parameter = parameter;
-    }
-
-    public void setJoinParameter(List<String> joinParameter) {
-        this.joinParameter = joinParameter;
     }
 
     public String getId() {
@@ -69,10 +62,6 @@ public class ProductParameter {
         this.defaultValue = defaultValue;
     }
 
-    public List<String> getJoinParameter() {
-        return joinParameter;
-    }
-
     public String getParameterCategory() {
         return parameterCategory;
     }
@@ -98,7 +87,6 @@ public class ProductParameter {
                 Objects.equals(id, other.id) &&
                 Objects.equals(inputType, other.inputType) &&
                 Objects.equals(format, other.format) &&
-                Objects.equals(defaultValue, other.defaultValue) &&
-                Objects.equals(joinParameter, other.joinParameter);
+                Objects.equals(defaultValue, other.defaultValue);
     }
 }

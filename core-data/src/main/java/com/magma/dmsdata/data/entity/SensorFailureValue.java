@@ -1,6 +1,8 @@
 package com.magma.dmsdata.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.magma.dmsdata.util.SensorCode;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -10,17 +12,17 @@ import java.util.List;
 @Document
 public class SensorFailureValue {
     @Id
-    private String code;
+    private SensorCode code;
     private List<Double> values;
 
     public SensorFailureValue() {
     }
 
-    public String getCode() {
+    public SensorCode getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(SensorCode code) {
         this.code = code;
     }
 

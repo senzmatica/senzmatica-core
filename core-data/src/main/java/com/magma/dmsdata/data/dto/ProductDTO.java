@@ -4,7 +4,6 @@ import com.magma.dmsdata.data.support.ProductVersion;
 import com.magma.dmsdata.util.DeviceCategory;
 import com.magma.dmsdata.util.ProductType;
 
-
 public class ProductDTO {
 
     private String productId;
@@ -15,6 +14,7 @@ public class ProductDTO {
 
     private ProductVersion version;
 
+    private Boolean majorVersionUpgrade;
 
     public ProductDTO() {
     }
@@ -49,5 +49,13 @@ public class ProductDTO {
 
     public void setProductType(ProductType productType) {
         this.productType = productType;
+    }
+
+    public Boolean getMajorVersionUpgrade() {
+        return majorVersionUpgrade;
+    }
+
+    public void setMajorVersionUpgrade(Boolean majorVersionUpgrade) {
+        this.majorVersionUpgrade = majorVersionUpgrade;
     }
 }

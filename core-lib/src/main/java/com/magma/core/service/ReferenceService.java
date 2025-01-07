@@ -1,15 +1,15 @@
 package com.magma.core.service;
 
 
-import com.magma.core.data.entity.*;
+import com.magma.dmsdata.data.entity.*;
 import com.magma.core.data.repository.AlertLimitRepository;
 import com.magma.core.data.repository.KitRepository;
 import com.magma.core.data.repository.UserFavouriteRepository;
-import com.magma.core.data.support.CorporateDeviceSummary;
-import com.magma.core.data.support.CorporateSensorSummary;
-import com.magma.core.util.MagmaException;
-import com.magma.core.util.MagmaStatus;
-import com.magma.core.util.SensorCode;
+import com.magma.dmsdata.data.support.CorporateDeviceSummary;
+import com.magma.dmsdata.data.support.CorporateSensorSummary;
+import com.magma.dmsdata.util.MagmaException;
+import com.magma.dmsdata.util.MagmaStatus;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaTime;
 import com.magma.util.Status;
 import org.joda.time.DateTime;
@@ -274,90 +274,6 @@ public class ReferenceService {
         sensorSummaryOutput.setNonPropertySensorSummaryMap(nonPropertySensorSummaryMap);
         sensorSummaryOutput.setPropertySensorSummaryDeviceMap(propertySensorSummaryDeviceMap);
         return sensorSummaryOutput;
-    }
-
-    public CorporateDeviceSummary getCorporateWiseOnlineDeviceSummary(String userId, String corporateId, String dataFilter, Boolean favouriteFilter) {
-        DateTime dateTimeNow = MagmaTime.now();
-        List<String> deviceIdsForQuery = new ArrayList<>();
-        List<String> deviceIdsInCorporate = new ArrayList<>();
-        String summaryType;
-        List<Kit> kitsForCorporate = corporateConnectorService.findKitsInCorporate(corporateId);
-        for (Kit kit : kitsForCorporate) {
-            deviceIdsInCorporate.addAll(kit.getDevices());
-        }
-
-        if (!favouriteFilter) {
-            if (dataFilter.equals("Offline")) {
-                deviceIdsForQuery = deviceIdsInCorporate;
-                summaryType = "Corporate wise offline device summary";
-
-                Query allDeviceQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
-                List<Device> allDevicesInCorporate = mongoTemplate.find(allDeviceQuery, Device.class);
-                List<Device> offlineDevicesInCorporate = allDevicesInCorporate.stream().filter(device -> ((device.getLastSeen() == null) || (device.getLastSeen() != null && device.getLastSeen().isBefore(dateTimeNow.minusMinutes(device.getInterval()))))).collect(Collectors.toList());
-
-                CorporateDeviceSummary deviceSummary = new CorporateDeviceSummary();
-                deviceSummary.setSummaryType(summaryType);
-                deviceSummary.setCorporateId(corporateId);
-                deviceSummary.setAllDevices(allDevicesInCorporate);
-                deviceSummary.setOfflineDevices(offlineDevicesInCorporate);
-
-                return deviceSummary;
-            } else if (dataFilter.equals("Online")) {
-                deviceIdsForQuery = deviceIdsInCorporate;
-                summaryType = "Corporate wise online device summary";
-
-                Query allDeviceQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
-                List<Device> allDevicesInCorporate = mongoTemplate.find(allDeviceQuery, Device.class);
-                List<Device> onlineDevicesInCorporate = allDevicesInCorporate.stream().filter(device -> device.getLastSeen() != null && !device.getLastSeen().isBefore(dateTimeNow.minusMinutes(device.getInterval()))).collect(Collectors.toList());
-
-                CorporateDeviceSummary deviceSummary = new CorporateDeviceSummary();
-                deviceSummary.setSummaryType(summaryType);
-                deviceSummary.setCorporateId(corporateId);
-                deviceSummary.setAllDevices(allDevicesInCorporate);
-                deviceSummary.setOnlineDevices(onlineDevicesInCorporate);
-
-                return deviceSummary;
-            }
-        } else {
-            UserFavourite userFavourite = userFavouriteRepository.findByUserId(userId);
-            if (userFavourite == null) {
-                return new CorporateDeviceSummary();
-            } else {
-                List<String> favouriteDevicesIds = userFavourite.getFavouriteDevices();
-                List<String> favouriteDevicesIdsInCorporate = favouriteDevicesIds.stream().filter(deviceIdsInCorporate::contains).collect(Collectors.toList());
-
-                if (dataFilter.equals("Offline")) {
-                    deviceIdsForQuery = favouriteDevicesIdsInCorporate;
-                    summaryType = "Corporate wise favourite-offline device summary";
-
-                    Query allDeviceQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
-                    List<Device> allDevicesInCorporate = mongoTemplate.find(allDeviceQuery, Device.class);
-                    List<Device> offlineDevicesInCorporate = allDevicesInCorporate.stream().filter(device -> ((device.getLastSeen() == null) || (device.getLastSeen() != null && device.getLastSeen().isBefore(dateTimeNow.minusMinutes(device.getInterval()))))).collect(Collectors.toList());
-
-                    CorporateDeviceSummary deviceSummary = new CorporateDeviceSummary();
-                    deviceSummary.setSummaryType(summaryType);
-                    deviceSummary.setCorporateId(corporateId);
-                    deviceSummary.setOfflineDevices(offlineDevicesInCorporate);
-
-                    return deviceSummary;
-                } else if (dataFilter.equals("Online")) {
-                    deviceIdsForQuery = favouriteDevicesIdsInCorporate;
-                    summaryType = "Corporate wise favourite-online device summary";
-
-                    Query allDeviceQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
-                    List<Device> allDevicesInCorporate = mongoTemplate.find(allDeviceQuery, Device.class);
-                    List<Device> onlineDevicesInCorporate = allDevicesInCorporate.stream().filter(device -> device.getLastSeen() != null && !device.getLastSeen().isBefore(dateTimeNow.minusMinutes(device.getInterval()))).collect(Collectors.toList());
-
-                    CorporateDeviceSummary deviceSummary = new CorporateDeviceSummary();
-                    deviceSummary.setSummaryType(summaryType);
-                    deviceSummary.setCorporateId(corporateId);
-                    deviceSummary.setOnlineDevices(onlineDevicesInCorporate);
-
-                    return deviceSummary;
-                }
-            }
-        }
-        return new CorporateDeviceSummary();
     }
 
     public List<Device> getCorporateWiseDevices(String userId, String corporateId, Boolean favouriteFilter, String dataFilter, String sensorName) {

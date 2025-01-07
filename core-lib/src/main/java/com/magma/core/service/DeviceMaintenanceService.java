@@ -1,7 +1,7 @@
 package com.magma.core.service;
 
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.Offline;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.Offline;
 
 import java.util.List;
 import java.util.Map;

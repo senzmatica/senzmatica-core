@@ -3,17 +3,16 @@ package com.magma.core.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.core.data.dto.PropertyDTO;
-import com.magma.core.data.entity.Error;
-import com.magma.core.data.entity.*;
+import com.magma.dmsdata.data.entity.Error;
+import com.magma.dmsdata.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.core.data.support.Connectivity;
-import com.magma.core.data.support.GeoType;
-import com.magma.core.data.support.Operation;
-import com.magma.core.data.support.Shift;
+import com.magma.dmsdata.data.support.Connectivity;
+import com.magma.dmsdata.data.support.GeoType;
+import com.magma.dmsdata.data.support.Operation;
+import com.magma.dmsdata.data.support.Shift;
 import com.magma.core.grpc.Properties;
 import com.magma.core.grpc.*;
-import com.magma.core.util.*;
+import com.magma.dmsdata.util.*;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import io.grpc.ManagedChannel;
@@ -39,9 +38,6 @@ import java.util.regex.Pattern;
 
 @Service
 public class DataProcessorService {
-
-    @Autowired
-    KitModelRepository kitModelRepository;
 
     @Autowired
     KitRepository kitRepository;
@@ -116,321 +112,9 @@ public class DataProcessorService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessorService.class);
 
-    public void doHandleConfiguration(String deviceId, String txt) {
-        Device device = deviceRepository.findOne(deviceId);
-
-        if (device == null) {
-            LOGGER.error("No Device Found with Device Id : {}", deviceId);
-            return;
-        }
-
-        LOGGER.debug("Config Response found Device : {}, Message : {}", deviceId, txt);
-
-        if (device.getConnectivityMatrix().containsKey(Connectivity.WIFI)) {
-            Map<String, String> wifi = device.getConnectivityMatrix().get(Connectivity.WIFI);
-            if (txt.contains("GET:1")) {
-                wifi.put("status", "success");
-                wifi.remove("cmd");
-                mqttGateway.send(mqttFrontTopic + deviceId + "/C", "Successfully Configured");
-
-            } else if (txt.contains("GET:0")) {
-                if (wifi.containsKey("cmd")) {
-                    String cmd = wifi.remove("cmd");
-                    LOGGER.debug("Trying to Connect again Device : {}, CMD : {}", deviceId, cmd);
-                    mqttGateway.send(mqttPubTopic + deviceId + "/C", true, cmd);
-
-                } else {
-                    wifi.put("status", "Error in Set Parameter Please try Again");
-                    mqttGateway.send(mqttFrontTopic + deviceId + "/C", "Error in Set Parameter Please try Again");
-
-                }
-            }
-            deviceRepository.save(device);
-        }
-    }
-
-    public Property handleManualData(String kitId, PropertyDTO propertyDTO) {
-        LOGGER.debug("Manual Data Entry Request for Device: {}", kitId);
-        Kit kit = kitRepository.findOne(kitId);
-        if (kit == null) {
-            String deviceId = kitId;
-            Device device = deviceRepository.findOne(deviceId);
-            if (device == null) {
-                LOGGER.error("No Device Found with Device Id : {}", deviceId);
-                throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-            }
-            kit = kitRepository.findByDevices(deviceId);
-            if (kit == null) {
-                LOGGER.info("No Kit Found with Device Id : {}", kitId);
-                throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-            }
-        }
-
-        Property property = new Property();
-        BeanUtils.copyProperties(propertyDTO, property);
-
-        //Validation Of Manual Data's  value
-        if (property.getValue() == null || property.getCode() == null || property.getNumber() == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-
-        // Validity of Code and Number
-        SensorCode[] validPropertiesArray = kit.getModel().getProperties();
-        List<SensorCode> validPropertyList = Arrays.asList(validPropertiesArray);
-        Integer number = propertyDTO.getNumber();
-        SensorCode code = propertyDTO.getCode();
-
-        if ((number > validPropertyList.size() - 1) || !validPropertyList.contains(code) || validPropertyList.get(number) != code) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        //Store Property in Property Table
-        property.setKitId(kit.getId());
-        property.setStoredDataFlag("1");
-        property.setManualDataFlag("1");
-        property.setTime(new DateTime());
-
-        //Update Property Map of the Kit
-        Map<Integer, Property> propertyMap = kit.getPropertyMap();
-        propertyMap.put(propertyDTO.getNumber(), property);
-        kit.setPropertyMap(propertyMap);
-        kit.setLastSeen(new DateTime());
-        kitRepository.save(kit);
-
-        return propertyRepository.save(property);
-    }
-
-    public List<Property> handleManualDataBulk(String kitId, List<PropertyDTO> propertyDTOs) {
-        LOGGER.debug("Manual Data Entry Request for Device: {}", kitId);
-        Kit kit = kitRepository.findOne(kitId);
-        if (kit == null) {
-            String deviceId = kitId;
-            Device device = deviceRepository.findOne(deviceId);
-            if (device == null) {
-                LOGGER.error("No Device Found with Device Id : {}", deviceId);
-                throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-            }
-            kit = kitRepository.findByDevices(deviceId);
-            if (kit == null) {
-                LOGGER.info("No Kit Found with Device Id : {}", kitId);
-                throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-            }
-        }
-        List<Property> finalResponse = new ArrayList<>();
-        Kit finalKit = kit;
-        propertyDTOs.forEach((propertyDTO) -> {
-            Property property = new Property();
-            BeanUtils.copyProperties(propertyDTO, property);
-
-            //Validation Of Manual Data's  value
-            if (property.getValue() == null || property.getCode() == null || property.getNumber() == null) {
-                throw new MagmaException(MagmaStatus.INVALID_INPUT);
-            }
-
-            // Validity of Code and Number
-            SensorCode[] validPropertiesArray = finalKit.getModel().getProperties();
-            List<SensorCode> validPropertyList = Arrays.asList(validPropertiesArray);
-            Integer number = propertyDTO.getNumber();
-            SensorCode code = propertyDTO.getCode();
-
-            if ((number > validPropertyList.size() - 1) || !validPropertyList.contains(code) || validPropertyList.get(number) != code) {
-                throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-            }
-
-            //Store Property in Property Table
-            property.setKitId(finalKit.getId());
-            property.setStoredDataFlag("1");
-            property.setManualDataFlag("1");
-            property.setTime(new DateTime());
-
-            //Update Property Map of the Kit
-            Map<Integer, Property> propertyMap = finalKit.getPropertyMap();
-            propertyMap.put(propertyDTO.getNumber(), property);
-            finalKit.setPropertyMap(propertyMap);
-            finalKit.setLastSeen(new DateTime());
-            kitRepository.save(finalKit);
-
-            Property addedProperty = propertyRepository.save(property);
-            finalResponse.add(addedProperty);
-        });
-        return finalResponse;
-    }
-
-    public Double getPropertyFromS3Image(String kitId, String imageURL) throws NumberFormatException {
-        LOGGER.debug("Image Data Entry Request for Kit : {}", kitId);
-        Kit kit = kitRepository.findOne(kitId);
-
-        if (kit == null) {
-            String deviceId = kitId;
-            Device device = deviceRepository.findOne(deviceId);
-            if (device == null) {
-                LOGGER.error("No Device Found with Device Id : {}", deviceId);
-                throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-            }
-            kit = kitRepository.findByDevices(deviceId);
-            if (kit == null) {
-                LOGGER.info("No Kit Found with Device Id : {}", kitId);
-                throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-            }
-        }
-        if ((imageURL.contains("us-west-2") && imageURL.length() < 50) || (!imageURL.contains("us-west-2") && imageURL.length() < 40)) {
-            throw new MagmaException(MagmaStatus.BAD_IMAGE_REQUEST);
-        }
-        //Process Image
-        String input = imageURL;
-        String outPut = "";
-        try {
-            String s = null;
-            Pattern pattern = Pattern.compile("[^a-zA-Z0-9]");
-            Matcher matcher = pattern.matcher(input);
-            boolean isStringContainsSpecialCharacter = matcher.find();
-
-            // https://senzmate-polar.s3.us-west-2.amazonaws.com/senzmate-polar/images/display/test1.jpeg
-            char ch = '"';
-            String input1;
-            if (input.contains(Character.toString(ch))) {
-                if (input.contains("us-west-2"))
-                    input1 = "-i " + input.substring(51, input.length() - 1) + " -nd 1";
-                else
-                    input1 = "-i " + input.substring(41, input.length() - 1) + " -nd 1";
-            } else if (input.contains("us-west-2"))
-                input1 = "-i " + input.substring(50, input.length()) + " -nd 1";
-            else
-                input1 = "-i " + input.substring(40, input.length()) + " -nd 1";
-
-            //todo remove absoulute path
-            String command = "python /home/john/apps/python_app/displayOCR_main.py " + input1;
-
-            //command Format: python, locationOf.Py, arguments with space
-            Process p = Runtime.getRuntime().exec(command);
-            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-            while ((s = in.readLine()) != null) {
-                outPut = s;
-            }
-
-        } catch (IOException ie) {
-            throw new MagmaException(MagmaStatus.BAD_IMAGE_REQUEST);
-        }
-
-        if (outPut.equals("")) {
-            throw new MagmaException(MagmaStatus.ERROR_IN_IMAGE_PROCESSING);
-        }
-        //Output= "Value : 26";
-        String valueInString = outPut.substring(6);
-        double value = Double.parseDouble(valueInString);
-
-        //Store Image In Additional Table
-        propertyImageRepository.save(new PropertyImage(kitId, input));
-
-        return value;
-    }
-
-    public Property storePropertyFromS3Image(String kitId, PropertyDTO propertyDTO) throws NumberFormatException {
-        LOGGER.debug("Image Data Entry Request for Kit : {}", kitId);
-        Kit kit = kitRepository.findOne(kitId);
-
-        if (kit == null) {
-            String deviceId = kitId;
-            Device device = deviceRepository.findOne(deviceId);
-            if (device == null) {
-                LOGGER.error("No Device Found with Device Id : {}", deviceId);
-                throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
-            }
-            kit = kitRepository.findByDevices(deviceId);
-            if (kit == null) {
-                LOGGER.info("No Kit Found with Device Id : {}", kitId);
-                throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
-            }
-        }
-        if (propertyDTO.getImageURL() == null || propertyDTO.getImageURL().equals("")) {
-            throw new MagmaException(MagmaStatus.BAD_IMAGE_REQUEST);
-        }
-
-        Property property = new Property();
-        BeanUtils.copyProperties(propertyDTO, property);
-
-        //Validation Of Manual Data
-        if (property.getValue() != null || property.getCode() == null || property.getNumber() == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
-        }
-
-        // Validity of Code and Number
-        SensorCode[] validPropertiesArray = kit.getModel().getProperties();
-        List<SensorCode> validPropertyList = Arrays.asList(validPropertiesArray);
-        Integer number = propertyDTO.getNumber();
-        SensorCode code = propertyDTO.getCode();
-        if ((number > validPropertyList.size() - 1) || !validPropertyList.contains(code) || validPropertyList.get(number) != code) {
-            throw new MagmaException(MagmaStatus.PROPERTY_NOT_FOUND);
-        }
-
-        //Process Image
-        String input = propertyDTO.getImageURL(); //Get input String From DTO
-        String outPut = "";
-        try {
-            String s = null;
-            Pattern pattern = Pattern.compile("[^a-zA-Z0-9]");
-            Matcher matcher = pattern.matcher(input);
-            boolean isStringContainsSpecialCharacter = matcher.find();
-
-            // https://senzmate-polar.s3.us-west-2.amazonaws.com/senzmate-polar/images/display/test1.jpeg
-            char ch = '"';
-            String input1;
-            if (input.contains(Character.toString(ch))) {
-                if (input.contains("us-west-2"))
-                    input1 = "-i " + input.substring(51, input.length() - 1) + " -nd 1";
-                else
-                    input1 = "-i " + input.substring(41, input.length() - 1) + " -nd 1";
-            } else if (input.contains("us-west-2"))
-                input1 = "-i " + input.substring(50, input.length()) + " -nd 1";
-            else
-                input1 = "-i " + input.substring(40, input.length()) + " -nd 1";
-
-            //todo remove absoulute path
-            String command = "python /home/john/apps/python_app/displayOCR_main.py " + input1;
-
-            //command Format: python, locationOf.Py, arguments with space
-            Process p = Runtime.getRuntime().exec(command);
-            BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-            while ((s = in.readLine()) != null) {
-                outPut = s;
-            }
-
-        } catch (IOException ie) {
-            throw new MagmaException(MagmaStatus.BAD_IMAGE_REQUEST);
-        }
-
-        if (outPut.equals("")) {
-            throw new MagmaException(MagmaStatus.ERROR_IN_IMAGE_PROCESSING);
-        }
-        //Output= "Value : 26";
-        String valueInString = outPut.substring(6);
-        double value = Double.parseDouble(valueInString);
-
-        //Store Property in Property Table
-        property.setKitId(kit.getId());
-        property.setStoredDataFlag("1");
-        property.setManualDataFlag("1");
-        property.setValue(value);
-        property.setTime(new DateTime());
-
-        //Update Property Map of the Kit
-        Map<Integer, Property> propertyMap = kit.getPropertyMap();
-        propertyMap.put(propertyDTO.getNumber(), property);
-        kit.setPropertyMap(propertyMap);
-        kit.setLastSeen(new DateTime());
-        kitRepository.save(kit);
-
-        //Store Image In Additional Table
-        propertyImageRepository.save(new PropertyImage(kitId, input));
-
-        return propertyRepository.save(property);
-    }
-
     public void doHandle(String deviceId, String txt) {
         String tempDeviceId = deviceId;
-        Device device = Optional.ofNullable(deviceRepository.findOne(tempDeviceId))
+        Device device = Optional.ofNullable(deviceRepository.findById(tempDeviceId).orElse(null))
                 .orElseGet(() -> deviceRepository.findByCustomPublishTopicOrCustomRemoteTopic(tempDeviceId));
 
         if (device == null) {
@@ -1400,13 +1084,6 @@ public class DataProcessorService {
         return -9999.0;
     }
 
-    PredictionOutputs predict(String model, PredictionInputs predictionInputs) {
-
-        LOGGER.debug("Prediction Started Model : {}, with Sensors : {}", model, predictionInputs);
-        return stub.predictList(predictionInputs);
-    }
-
-
     public void doHandleActuators(String deviceId, String txt) {
 
         Kit kit = kitRepository.findByDevices(deviceId);
@@ -1432,7 +1109,7 @@ public class DataProcessorService {
         String kitId = kit.getId();
         KitModel kitModel = kit.getModel();
 
-        Device device = deviceRepository.findOne(deviceId);
+        Device device = deviceRepository.findById(deviceId).orElse(null);
 
         if (device.getGroup() != null) {
             LOGGER.debug("Group :IR: {}, Kit : {}, Device : {}, Message : {}", device.getGroup(), kitId, deviceId, txt);
@@ -1505,21 +1182,6 @@ public class DataProcessorService {
         LOGGER.debug("Trained List : {}, Predict List : {}", response.getTrainedList(), response.getPredictedList());
     }
 
-    public HashMap<String, Object> getPredictionAndTrendLine(List<Float> points, Integer predict, Integer deg) {
-        RegressionOutput response = stub.doRegression(RegressionInput.newBuilder()
-                .setDeg(deg)
-                .setPredict(predict)
-                .addAllPoints(points)
-                .build());
-
-        HashMap<String, Object> res = new HashMap<>();
-        res.put("trendLine", response.getTrainedList());
-        res.put("predictionLine", response.getPredictedList());
-        LOGGER.debug("Trained List : {}, Predict List : {}", response.getTrainedList(), response.getPredictedList());
-
-        return res;
-    }
-
     @PostConstruct
     private void initiate() {
         channel = ManagedChannelBuilder.forAddress("localhost", 50055)
@@ -1528,14 +1190,10 @@ public class DataProcessorService {
         stub = PredictConnectorGrpc.newBlockingStub(channel);
     }
 
-    private void destroy() {
-        channel.shutdown();
-    }
-
     public String handleCodec(Device device, String rawTxt) {
         LOGGER.debug("handleCodec for Device : {}, Message : {}", device.getId(), rawTxt);
 
-        MagmaCodec magmaCodec = magmaCodecRepository.findById(device.getMagmaCodecId());
+        MagmaCodec magmaCodec = magmaCodecRepository.findById(device.getMagmaCodecId()).orElse(null);
 
         if (magmaCodec != null) {
 

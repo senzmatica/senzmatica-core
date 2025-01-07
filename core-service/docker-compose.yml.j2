@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  magma-core-web-service:
+    build:
+      context: {{ DockerFileDestinationOfDMSweb }}
+      dockerfile: Dockerfile
+    container_name: "dms-web"
+    ports:
+      - "3001:3001"
+    networks:
+      - magma
+    depends_on:
+      - magma-core-service
+    restart: always
+
+  magma-core-service:
+    build:
+      context: {{ DockerFileDestinationOfMagmaCore }}
+      dockerfile: Dockerfile
+    container_name: "magma-core"
+    ports:
+      - "9044:9044"
+    networks:
+      - magma
+    depends_on:
+      - mongodb
+    restart: always
+
+  mongodb:
+    image: mongo:4.4
+    container_name: "mongodb"
+    ports:
+      - "27017:27017"
+    networks:
+      - magma
+    volumes:
+      - {{ dumpFolderDestinationLocation }}:/dump/senzagro
+      - {{ initScriptDestinationLocation }}:/docker-entrypoint-initdb.d
+    restart: always
+
+networks:
+  magma:
+    driver: bridge

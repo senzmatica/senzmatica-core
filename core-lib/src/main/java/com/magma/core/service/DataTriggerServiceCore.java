@@ -1,8 +1,8 @@
 package com.magma.core.service;
 
 
-import com.magma.core.data.entity.Action;
-import com.magma.core.data.entity.Property;
+import com.magma.dmsdata.data.entity.Action;
+import com.magma.dmsdata.data.entity.Property;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

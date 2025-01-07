@@ -7,7 +7,9 @@ public enum ActuatorCode {
     B("Buzzer"),
     T("Trigger"),
     X("Test X"),
-    Y("Test Y");
+    Y("Test Y"),
+    GS("Game Status"),
+    C("Color");
 
     private String value;
 

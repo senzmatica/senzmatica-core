@@ -1,6 +1,6 @@
 package com.magma.core.data.repository;
 
-import com.magma.core.data.entity.Device;
+import com.magma.dmsdata.data.entity.Device;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -19,8 +19,6 @@ public interface DeviceRepository extends MongoRepository<Device, String> {
     List<Device> findByIdNotIn(List<String> ids);
 
     List<Device> findByBatchNumber(Integer batchNumber);
-
-    Device findById(String deviceId);
 
     List<Device> findByMagmaCodecId(String codecId);
 

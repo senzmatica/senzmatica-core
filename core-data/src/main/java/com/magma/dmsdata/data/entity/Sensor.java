@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.support.Shift;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
@@ -28,7 +29,7 @@ public class Sensor {
 
     private Integer number;
 
-    private String code;
+    private SensorCode code;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
     private DateTime time;
@@ -48,10 +49,12 @@ public class Sensor {
 
     public String flag; // 0- real time
 
+    public Boolean isEditedFromUser;
+
     public Sensor() {
     }
 
-    public Sensor(String deviceId, Integer number, String code, DateTime time, String value) {
+    public Sensor(String deviceId, Integer number, SensorCode code, DateTime time, String value) {
         this.deviceId = deviceId;
         this.number = number;
         this.code = code;
@@ -59,8 +62,8 @@ public class Sensor {
         this.value = value;
     }
 
-    public Sensor(String deviceId, Integer number, String code, DateTime time, String value,
-                  Map<Integer, Shift> shiftMap) {
+    public Sensor(String deviceId, Integer number, SensorCode code, DateTime time, String value,
+            Map<Integer, Shift> shiftMap) {
         this.deviceId = deviceId;
         this.number = number;
         this.code = code;
@@ -69,7 +72,7 @@ public class Sensor {
         this.shiftMap = shiftMap;
     }
 
-    public Sensor(String deviceId, Integer number, String code, DateTime time, String value, String flag) {
+    public Sensor(String deviceId, Integer number, SensorCode code, DateTime time, String value, String flag) {
         this.deviceId = deviceId;
         this.number = number;
         this.code = code;
@@ -78,8 +81,8 @@ public class Sensor {
         this.flag = flag;
     }
 
-    public Sensor(String deviceId, Integer number, String code, DateTime time, String value,
-                  Map<Integer, Shift> shiftMap, String flag) {
+    public Sensor(String deviceId, Integer number, SensorCode code, DateTime time, String value,
+            Map<Integer, Shift> shiftMap, String flag) {
         this.deviceId = deviceId;
         this.number = number;
         this.code = code;
@@ -87,6 +90,7 @@ public class Sensor {
         this.value = value;
         this.shiftMap = shiftMap;
         this.flag = flag;
+        this.isEditedFromUser = false;
     }
 
     public boolean validate() {
@@ -119,11 +123,11 @@ public class Sensor {
         this.number = number;
     }
 
-    public String getCode() {
+    public SensorCode getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(SensorCode code) {
         this.code = code;
     }
 
@@ -180,6 +184,14 @@ public class Sensor {
             return "";
         }
         return MagmaTime.formatISO8601(time);
+    }
+
+    public Boolean getEditedFromUser() {
+        return isEditedFromUser;
+    }
+
+    public void setEditedFromUser(Boolean editedFromUser) {
+        isEditedFromUser = editedFromUser;
     }
 
     @Override

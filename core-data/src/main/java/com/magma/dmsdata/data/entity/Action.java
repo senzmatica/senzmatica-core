@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.util.ActuatorCode;
 import com.magma.util.MagmaDateTimeSerializer;
+import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
@@ -60,11 +61,10 @@ public class Action {
     }
 
     public String getDisplayName() {
-        switch (code) {
-            case B:
-                return "Buzzer";
-            default:
-                return code.value();
+        if (code.equals(ActuatorCode.B)) {
+            return "Buzzer";
+        } else {
+            return code.value();
         }
     }
 
@@ -143,6 +143,13 @@ public class Action {
 
     public void setModifiedDate(DateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
+    }
+
+    public String getTimeString() {
+        if (time == null) {
+            return "";
+        }
+        return MagmaTime.formatISO8601(time);
     }
 
     @Override

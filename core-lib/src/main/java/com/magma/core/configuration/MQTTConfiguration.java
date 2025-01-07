@@ -3,6 +3,8 @@ package com.magma.core.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.gateway.MQTTMessageHandler;
 import com.magma.util.MagmaUtil;
+
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
@@ -129,9 +131,11 @@ public class MQTTConfiguration {
     @Bean
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
-        factory.setServerURIs(mqttBrokerAddress);
-        factory.setUserName(mqttClientUsername);
-        factory.setPassword(mqttClientPassword);
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setServerURIs(new String[]{mqttBrokerAddress});
+        options.setUserName(mqttClientUsername);
+        options.setPassword(mqttClientPassword.toCharArray());
+        factory.setConnectionOptions(options);
         return factory;
     }
 

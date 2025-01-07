@@ -1,9 +1,9 @@
 package com.magma.dmsdata.data.support;
 
-import com.magma.dmsdata.util.ProductStatus;
-
 import java.util.List;
 import java.util.Map;
+
+import com.magma.dmsdata.util.ProductStatus;
 
 public class ProductVersion {
 
@@ -22,6 +22,14 @@ public class ProductVersion {
     private List<String> devices;
 
     private Map<String, TestResult> deviceTestResults;
+
+    private Map<String, List<String>> joinParameters;
+
+    private String serverIpAddress;
+
+    private String fileName;
+
+    private Boolean majorVersionUpgrade;
 
     public ProductVersion() {
     }
@@ -98,5 +106,27 @@ public class ProductVersion {
         this.serverIpAddress = serverIpAddress;
     }
 
-    private String serverIpAddress;
+    public Map<String, List<String>> getJoinParameters() {
+        return joinParameters;
+    }
+
+    public void setJoinParameters(Map<String, List<String>> joinParameters) {
+        this.joinParameters = joinParameters;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public Boolean getMajorVersionUpgrade() {
+        return majorVersionUpgrade;
+    }
+
+    public void setMajorVersionUpgrade(Boolean majorVersionUpgrade) {
+        this.majorVersionUpgrade = majorVersionUpgrade;
+    }
 }

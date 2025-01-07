@@ -1,8 +1,9 @@
 package com.magma.test.service;
 
-import com.magma.core.data.entity.Alert;
-import com.magma.core.data.entity.Kit;
-import com.magma.core.data.entity.Offline;
+import com.magma.dmsdata.data.entity.Alert;
+import com.magma.dmsdata.data.entity.Error;
+import com.magma.dmsdata.data.entity.Kit;
+import com.magma.dmsdata.data.entity.Offline;
 import com.magma.core.service.KitNotificationService;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +27,7 @@ public class AlertSenderServiceImpl extends KitNotificationService {
     }
 
     @Override
-    public String sendError(Kit kit, com.magma.core.data.entity.Error error) {
+    public String sendError(Kit kit, Error error) {
         return null;
     }
 }

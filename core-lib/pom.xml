@@ -7,12 +7,10 @@
     <parent>
         <groupId>com.magma.core</groupId>
         <artifactId>magma-core</artifactId>
-        <version>1.1.0.0</version>
+        <version>1.2.0.0</version>
     </parent>
 
     <artifactId>core-lib</artifactId>
-    <packaging>jar</packaging>
-    <version>1.1.0.0</version>
 
     <properties>
         <jdk.version>1.8</jdk.version>
@@ -62,6 +60,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.magma.core</groupId>
+            <artifactId>core-data</artifactId>
+            <version>1.2.0.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty</artifactId>
             <version>1.23.0</version>
@@ -89,6 +93,29 @@
             <groupId>com.vaadin.external.google</groupId>
             <artifactId>android-json</artifactId>
             <version>0.0.20131108.vaadin1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+            <version>1.4.1.RELEASE</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-netty-shaded</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-client-spring-boot-autoconfigure</artifactId>
+            <version>1.4.1.RELEASE</version>
+            <type>pom</type>
         </dependency>
     </dependencies>
 

@@ -17,10 +17,11 @@ public class UserFavourite {
 
     private List<String> favouriteProducts;
 
-    public UserFavourite(String id, String userId, List<String> favouriteDevices) {
+    public UserFavourite(String id, String userId, List<String> favouriteDevices, List<String> favouriteProducts) {
         this.id = id;
         this.userId = userId;
         this.favouriteDevices = favouriteDevices;
+        this.favouriteProducts = favouriteProducts;
     }
 
     public UserFavourite() {

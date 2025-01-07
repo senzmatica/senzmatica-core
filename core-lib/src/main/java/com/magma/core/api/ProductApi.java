@@ -1,17 +1,17 @@
 package com.magma.core.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.magma.core.data.dto.ProductDTO;
-import com.magma.core.data.dto.ProductTypeDTO;
-import com.magma.core.data.entity.Device;
-import com.magma.core.data.entity.ProductCore;
-import com.magma.core.data.entity.ProductTypes;
-import com.magma.core.data.support.ProductParameter;
-import com.magma.core.data.support.ProductVersion;
-import com.magma.core.data.support.SetupSenzmatica;
+import com.magma.dmsdata.data.dto.ProductDTO;
+import com.magma.dmsdata.data.dto.ProductTypeDTO;
+import com.magma.dmsdata.data.entity.Device;
+import com.magma.dmsdata.data.entity.ProductCore;
+import com.magma.dmsdata.data.entity.ProductTypes;
+import com.magma.dmsdata.data.support.ProductParameter;
+import com.magma.dmsdata.data.support.ProductVersion;
+import com.magma.dmsdata.data.support.SetupSenzmatica;
 import com.magma.core.service.ProductService;
 import com.magma.core.service.UserFavouriteService;
-import com.magma.core.util.*;
+import com.magma.dmsdata.util.*;
 import com.magma.util.BadRequestException;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,45 +140,9 @@ public class ProductApi {
         return new MagmaResponse<>(productService.getAllProductTypes());
     }
 
-    @RequestMapping(value = "/core/product/productTypes/{productTypesId}", method = RequestMethod.DELETE)
-    public MagmaResponse<String> deleteProductTypes(@PathVariable("productTypesId") String productTypesId) {
-        return new MagmaResponse<>(productService.deleteProductTypes(productTypesId));
-    }
-
-    @RequestMapping(value = "/core/product/productTypes/{productTypesId}", method = RequestMethod.PUT)
-    public MagmaResponse<ProductTypes> updateProductTypes(@RequestBody ProductTypes productTypes,
-                                                          @PathVariable("productTypesId") String productTypesId) {
-        return new MagmaResponse<>(productService.updateProductTypes(productTypesId, productTypes));
-    }
-
-    @RequestMapping(value = "/core/product/{productId}/version/{version}/status/{status}/{changedBy}", method = RequestMethod.PUT)
-    public MagmaResponse<ProductCore> changeStatusOfVersion(@PathVariable("productId") String productId,
-                                                            @PathVariable("version") String version,
-                                                            @PathVariable("status") ProductStatus status,
-                                                            @PathVariable("changedBy") String changedBy) {
-        return new MagmaResponse<>(productService.changeStatusOfTheVersion(productId, version, status, changedBy));
-    }
-
-    @RequestMapping(value = "/core/product/version/{actionBy}/update", method = RequestMethod.PUT)
-    public MagmaResponse<String> updateProductVersionInDevice(@RequestBody List<ProductDTO> productDTOS,
-                                                              @PathVariable String actionBy) {
-        return new MagmaResponse<>(productService.updateDeviceProductVersionBulk(productDTOS, actionBy));
-    }
-
     @RequestMapping(value = "/core/product/version/reject", method = RequestMethod.PUT)
     public MagmaResponse<String> rejectProductVersion(@RequestBody ProductDTO productDTO) {
         return new MagmaResponse<>(productService.rejectDeviceProductVersion(productDTO));
-    }
-
-    @RequestMapping(value = "/core/product/devices", method = RequestMethod.GET)
-    public MagmaResponse<List<Device>> getDevicesByProductRelatedFilters(@RequestParam(value = "deviceIds", required = false) List<String> devices,
-                                                                         @RequestParam(value = "productType", required = false) String productType,
-                                                                         @RequestParam(value = "versionStatus", required = false) String versionStatus,
-                                                                         @RequestParam(value = "currentVersion", required = false) String currentVersion,
-                                                                         @RequestParam(value = "client", required = false) String clientName,
-                                                                         @RequestParam(value = "previousVersions", required = false) List<String> previousVersions) {
-        return new MagmaResponse<>(productService.devicesWithRequiredFilters(devices, productType, versionStatus, currentVersion, previousVersions, clientName));
-
     }
 
 

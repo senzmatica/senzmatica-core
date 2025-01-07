@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.*;
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
@@ -27,7 +28,7 @@ public class Property implements Comparable<Property> {
 
     private Integer number;
 
-    private String code;
+    private SensorCode code;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
     @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
@@ -58,10 +59,12 @@ public class Property implements Comparable<Property> {
 
     private String label;
 
+    public Boolean isEditedFromUser = false;
+
     public Property() {
     }
 
-    public Property(String kitId, Integer number, String code, DateTime time, Double value, Double pivot) {
+    public Property(String kitId, Integer number, SensorCode code, DateTime time, Double value, Double pivot) {
         this.kitId = kitId;
         this.number = number;
         this.code = code;
@@ -70,8 +73,8 @@ public class Property implements Comparable<Property> {
         this.pivot = pivot;
     }
 
-    public Property(String kitId, Integer number, String code, DateTime time, Double value, Double pivot,
-                    String storedDataFlag, String manualDataFlag) {
+    public Property(String kitId, Integer number, SensorCode code, DateTime time, Double value, Double pivot,
+            String storedDataFlag, String manualDataFlag) {
         this.kitId = kitId;
         this.number = number;
         this.code = code;
@@ -80,6 +83,7 @@ public class Property implements Comparable<Property> {
         this.pivot = pivot;
         this.storedDataFlag = storedDataFlag;
         this.manualDataFlag = manualDataFlag;
+        this.isEditedFromUser = false;
     }
 
     public boolean validate() {
@@ -90,22 +94,22 @@ public class Property implements Comparable<Property> {
 
     public String getDisplayName() {
         switch (code) {
-            case "T":
+            case T:
                 return "Temp";
-            case "H":
+            case H:
                 return "Humidity";
-            case "DS":
+            case DS:
                 return "Door Status";
-            case "CS":
+            case CS:
                 return "Electric Current";
-            case "M":
+            case M:
                 return "Moisture";
-            case "A":
+            case A:
                 return "Alarm";
-            case "HB":
+            case HB:
                 return "Online";
             default:
-                return code;
+                return code.value();
         }
     }
 
@@ -115,38 +119,38 @@ public class Property implements Comparable<Property> {
         }
 
         switch (code) {
-            case "T":
-            case "ST":
+            case T:
+            case ST:
                 /*
                  * if (value == -127 || value == 85) {
                  * return "ERROR";
                  * }
                  */
                 return value + " \u2103";
-            case "WD":
+            case WD:
                 return value + " \u2134";
-            case "P":
+            case P:
                 return value + " hPa";
-            case "RF":
+            case RF:
                 return value + " mm";
-            case "WS":
+            case WS:
                 return value + " km/h";
-            case "H":
-            case "M":
+            case H:
+            case M:
                 return RoundUtil.to2Digit(value) + " %";
-            case "IRO":
+            case IRO:
                 return RoundUtil.round(value) + " %";
-            case "CN":
+            case CN:
                 return String.valueOf(RoundUtil.to2Digit(value * 1000)) + " μS/cm";
-            case "DS":
+            case DS:
                 return value == 1 ? "OPEN" : "CLOSED";
-            case "CS":
+            case CS:
                 return value == 1 ? "Presence" : "Power Cut";
-            case "N":
+            case N:
                 return value == 1 ? "Noisy" : "Normal";
-            case "A":
+            case A:
                 return value == 1 ? "Triggered" : "OFF";
-            case "HB":
+            case HB:
                 return value == 1 ? "Live" : "Offline";
             default:
                 return String.valueOf(value);
@@ -154,7 +158,7 @@ public class Property implements Comparable<Property> {
     }
 
     public boolean getShowThreshold() {
-        return !Arrays.asList(new String[]{"DS", "CS", "R"}).contains(code);
+        return !Arrays.asList(new SensorCode[] { SensorCode.DS, SensorCode.CS, SensorCode.R }).contains(code);
     }
 
     public String getId() {
@@ -181,11 +185,11 @@ public class Property implements Comparable<Property> {
         this.number = number;
     }
 
-    public String getCode() {
+    public SensorCode getCode() {
         return code;
     }
 
-    public void setCode(String code) {
+    public void setCode(SensorCode code) {
         this.code = code;
     }
 
@@ -282,6 +286,14 @@ public class Property implements Comparable<Property> {
             return "";
         }
         return MagmaTime.formatISO8601(time);
+    }
+
+    public Boolean getEditedFromUser() {
+        return isEditedFromUser;
+    }
+
+    public void setEditedFromUser(Boolean editedFromUser) {
+        isEditedFromUser = editedFromUser;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.magma.core.api;
 
-import com.magma.core.data.support.DataHTTP;
+import com.magma.dmsdata.data.support.DataHTTP;
 import com.magma.core.gateway.HTTPMessageHandler;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;

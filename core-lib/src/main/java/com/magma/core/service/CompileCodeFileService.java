@@ -50,5 +50,3 @@ public class CompileCodeFileService {
         return scanner.hasNext() ? scanner.next() : "";
     }
 }
-    
-
