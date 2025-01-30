@@ -86,6 +86,7 @@ public enum MagmaStatus {
     PRODUCT_NAME_REQUIRED("E571", "Product Name is required."),
     AT_LEAST_ONE_SENSOR_IS_REQUIRED("E572", "At least one sensor is required."),
     AT_LEAST_ONE_Actuator_IS_REQUIRED("E573", "At least one Actuator is required."),
+    SENSOR_OR_ACTUATOR_REQUIRED("E580","Sensor or Actuator required"),
 
     CONNECTIVITY_IS_REQUIRED("E574", "Connectivity is required."),
 

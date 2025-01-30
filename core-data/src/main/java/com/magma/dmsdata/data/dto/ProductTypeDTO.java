@@ -36,15 +36,17 @@ public class ProductTypeDTO {
         return MagmaUtil.validate(id)
                 && productName != null
                 && sensorCodes != null
-                && sensorCodes.length != 0
+                && actuatorCodes != null
+                && (sensorCodes.length != 0 || actuatorCodes.length != 0)
                 && connectivity != null
                 && protocol != null;
     }
 
     public boolean addValidate() {
         return productName != null
+                && sensorCodes != null
                 && actuatorCodes != null
-                && actuatorCodes.length != 0
+                && (sensorCodes.length != 0 || actuatorCodes.length != 0)
                 && connectivity != null
                 && protocol != null;
     }
