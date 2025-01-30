@@ -731,6 +731,9 @@ public class ProductService {
 
     public ProductTypes addOneProductType(ProductTypeDTO productTypeDTO) {
         logger.debug("Add new Product Type Request Found: {}", productTypeDTO);
+        if(productTypeDTO.getActuatorCodes().length == 0 && productTypeDTO.getSensorCodes().length == 0){
+            throw new MagmaException(MagmaStatus.SENSOR_OR_ACTUATOR_REQUIRED);
+        }
         if (!productTypeDTO.addValidate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
