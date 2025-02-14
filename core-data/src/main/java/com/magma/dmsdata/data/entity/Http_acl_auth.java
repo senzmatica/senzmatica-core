@@ -2,9 +2,8 @@ package com.magma.dmsdata.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.magma.dmsdata.util.MagmaException;
 import com.magma.dmsdata.util.MagmaStatus;
-
+import com.magma.dmsdata.util.MagmaException;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -168,8 +167,7 @@ public class Http_acl_auth {
     }
 
     public void validate() {
-        if (!"client_credentials".equals(grant_type) && !"password".equals(grant_type)
-                && !"refresh_token".equals(grant_type)) {
+        if (!"client_credentials".equals(grant_type) && !"password".equals(grant_type) && !"refresh_token".equals(grant_type)) {
             throw new MagmaException(MagmaStatus.INVALID_GRANT_TYPE);
         }
 

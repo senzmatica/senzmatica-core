@@ -1,10 +1,10 @@
 package com.magma.dmsdata.util;
 
-public enum SensorCode {
+public enum SensorCodeEnum {
     S("Status"),
-    T("Temperature"),
-    H("Humidity"),
-    M("Moisture"),
+    T("Temperature", "\u2103"),
+    H("Humidity", "%"),
+    M("Moisture", "%"),
     MA("Moisture Analog"),
     MEA("Moisture Conductivity Analog"),
     MEA0("Moisture Conductivity Analog V0"),
@@ -12,15 +12,15 @@ public enum SensorCode {
     MEA2("Moisture Conductivity Analog V2"),
     MEA3("Moisture Conductivity Analog V3"),
     MEA4("Moisture Conductivity Analog V4"),
-    IRO("Deep Root"),
-    N("Noise"),
+    IRO("Deep Root", "%"),
+    N("Noise", "Noisy(1)/Normal(0)"),
     K("Smoke"),
     V("Vibration"),
     W("Water"),
     G("GPS"),
     B("Battery"),
     BC("Battery Charging"),
-    RA("Relative Age"), // Age in seconds its based on a specific timestamp
+    RA("Relative Age"),   // Age in seconds its based on a specific timestamp
     BL("Battery Level"),
     RSSI("Received Signal Strength Indicator"),
     NSR("Noise Ratio"),
@@ -29,32 +29,32 @@ public enum SensorCode {
     R("Rain Drop"),
     O3("O3"),
     CO("CO"),
-    DS("Door Status"),
+    DS("Door Status", "OPEN(1)/CLOSED(0)"),
     LI("Light Intensity"),
     LIA("Light Intensity Analog"),
     LIA1("Light Intensity Analog V1"),
-    CN("Soil conductivity"),
+    CN("Soil conductivity", "μS/cm"),
     CNA("Soil conductivity Analog"),
     PHA("Ph Analog"),
     PH("Ph"),
-    CS("Current Sensor"),
+    CS("Current Sensor", "Presence/Power Cut"),
     E("Energy"),
     L("Location"),
     RL("Relative Location"), // Location based on other objects such as beacons
-    HB("Heart Beat"),
+    HB("Heart Beat", "Live(1)/Offline(0)"),
     X("Test X"),
     Y("Test Y"),
-    RF("Rainfall"),
-    CRF("Cumulative Rainfall"),
+    RF("Rainfall", "mm"),
+    CRF("Cumulative Rainfall", "mm"),
     EV("Evaporation"),
-    WD("Wind Direction"),
-    WS("Wind Speed"),
+    WD("Wind Direction", "\u2134"),
+    WS("Wind Speed", "km/h"),
     SI("Sunshine Intensity"),
-    ST("Soil Temperature"),
-    P("Pressure"),
+    ST("Soil Temperature", "\u2103"),
+    P("Pressure", "hPa"),
     WI("Wifi Signal Strength Indication"),
     CT("Count"),
-    CTD("Count Discrete"), // used when count is not continues (when count is discrete)
+    CTD("Count Discrete"),  // used when count is not continues (when count is discrete)
     YC("Yield Output Count"),
     PS("Power Status"),
     IT("Internal Temperature"),
@@ -69,11 +69,11 @@ public enum SensorCode {
     GN("Green"),
     RD("Red"),
     YW("Yellow"),
-    // Actuate Status
+    //Actuate Status
     C("Operated Status"),
     A("Alarm Status"),
 
-    // scada changes
+    //scada changes
     ID_MSG("Message ID"),
     ID_IV("Inv ID"),
     AP("Sum Of Active Phases"),
@@ -105,12 +105,20 @@ public enum SensorCode {
     EF("Event Fields"),
 
     N_ID("Network ID"),
+    LES("Lora Error State"),
     S_ID("Slave ID");
 
-    private String value;
 
-    SensorCode(String value) {
+    private String value;
+    private String unit;
+
+    SensorCodeEnum(String value) {
+        this(value, null);
+    }
+
+    SensorCodeEnum(String value, String unit) {
         this.value = value;
+        this.unit = unit;
     }
 
     public String value() {
@@ -119,5 +127,22 @@ public enum SensorCode {
 
     public String getValue() {
         return value;
+    }
+
+    public String unit() {
+        return unit;
+    }
+
+    public String getUnit() {
+        return unit;
+    }
+
+    public static String getUnitByCode(String code) {
+        for (SensorCodeEnum sensorCode : values()) {
+            if (sensorCode.name().equals(code)) {
+                return sensorCode.unit();
+            }
+        }
+        return null;
     }
 }

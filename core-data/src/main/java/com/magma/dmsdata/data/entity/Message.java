@@ -1,9 +1,8 @@
 package com.magma.dmsdata.data.entity;
 
+import com.magma.dmsdata.data.support.DeviceParameterConfigurationHistory;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.magma.dmsdata.data.support.DeviceParameterConfigurationHistory;
 
 @Document
 public class Message {
@@ -21,7 +20,7 @@ public class Message {
 
     private String device;
     private String topicNumber;
-    private String message;
+    private String payload;
 
     private DeviceParameterConfigurationHistory updateHistory;
 
@@ -36,12 +35,11 @@ public class Message {
     public Message() {
     }
 
-    public Message(String device, DeviceParameterConfigurationHistory updateHistory, String topicNumber,
-            String message) {
+    public Message(String device, DeviceParameterConfigurationHistory updateHistory, String topicNumber, String payload) {
         this.device = device;
         this.updateHistory = updateHistory;
         this.topicNumber = topicNumber;
-        this.message = message;
+        this.payload = payload;
         this.id = device + "-" + topicNumber;
     }
 
@@ -61,18 +59,18 @@ public class Message {
         this.topicNumber = topicNumber;
     }
 
-    public String getMessage() {
-        return message;
+    public String getPayload() {
+        return payload;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setPayload(String payload) {
+        this.payload = payload;
     }
 
-    public Message(String device, String topicNumber, String message) {
+    public Message(String device, String topicNumber, String payload) {
         this.device = device;
         this.topicNumber = topicNumber;
-        this.message = message;
+        this.payload = payload;
     }
 
     @Override
@@ -82,8 +80,9 @@ public class Message {
                 ", device='" + device + '\'' +
                 ", topicNumber='" + topicNumber + '\'' +
                 ", updateHistory=" + updateHistory +
-                ", message='" + message + '\'' +
+                ", message='" + payload + '\'' +
                 '}';
     }
+
 
 }

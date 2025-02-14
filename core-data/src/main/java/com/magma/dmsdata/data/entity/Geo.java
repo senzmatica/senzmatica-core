@@ -113,15 +113,12 @@ public class Geo {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
         Geo geo = (Geo) o;
 
-        return !(lat != null ? !lat.equals(geo.lat) : geo.lat != null)
-                && !(lng != null ? !lng.equals(geo.lng) : geo.lng != null);
+        return !(lat != null ? !lat.equals(geo.lat) : geo.lat != null) && !(lng != null ? !lng.equals(geo.lng) : geo.lng != null);
 
     }
 

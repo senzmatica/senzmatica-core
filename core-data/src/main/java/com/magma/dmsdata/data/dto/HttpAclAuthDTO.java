@@ -16,6 +16,7 @@ public class HttpAclAuthDTO {
     private String client_secret;
 
     @NotNull(message = "Grant type can't be null")
+    @NotEmpty(message = "Grant type can't be empty")
     private String grant_type;
 
     @NotNull(message = "Scope can't be null")

@@ -1,28 +1,33 @@
 package com.magma.dmsdata.data.entity;
 
-import org.springframework.data.annotation.Id;
-
+import com.magma.dmsdata.util.ActuatorCode;
+import com.magma.dmsdata.data.support.ProductVersion;
 import com.magma.dmsdata.data.support.Connectivity;
 import com.magma.dmsdata.data.support.Protocol;
-import com.magma.dmsdata.util.ActuatorCode;
-import com.magma.dmsdata.util.SensorCode;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
-public class ProductTypes {
+@Document
+public class ProductType {
 
     @Id
     private String id;
     private String productName;
-    private SensorCode[] sensorCodes;
+    private List<ProductVersion> versions;
+    private String[] sensorCodes;
     private ActuatorCode[] actuatorCodes;
     private boolean persistence;
     private Protocol protocol;
     private Connectivity connectivity;
     private String codecName;
     private boolean transcoder;
+    private boolean otaUpgradable;
+    private boolean remotelyConfigurable;
+    private String dataFormat;
 
-    public ProductTypes(String productName) {
+    public ProductType(String productName) {
         this.productName = productName;
     }
 
@@ -34,6 +39,14 @@ public class ProductTypes {
         this.id = id;
     }
 
+    public List<ProductVersion> getVersions() {
+        return versions;
+    }
+
+    public void setVersions(List<ProductVersion> versions) {
+        this.versions = versions;
+    }
+
     public String getProductName() {
         return productName;
     }
@@ -42,11 +55,11 @@ public class ProductTypes {
         this.productName = productName;
     }
 
-    public SensorCode[] getSensorCodes() {
+    public String[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(SensorCode[] sensorCodes) {
+    public void setSensorCodes(String[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -97,4 +110,29 @@ public class ProductTypes {
     public void setTranscoder(boolean transcoder) {
         this.transcoder = transcoder;
     }
+
+    public boolean isOtaUpgradable() {
+        return otaUpgradable;
+    }
+
+    public void setOtaUpgradable(boolean otaUpgradable) {
+        this.otaUpgradable = otaUpgradable;
+    }
+
+    public boolean isRemotelyConfigurable() {
+        return remotelyConfigurable;
+    }
+
+    public void setRemotelyConfigurable(boolean remotelyConfigurable) {
+        this.remotelyConfigurable = remotelyConfigurable;
+    }
+
+    public String getDataFormat() {
+        return dataFormat;
+    }
+
+    public void setDataFormat(String dataFormat) {
+        this.dataFormat = dataFormat;
+    }
+
 }

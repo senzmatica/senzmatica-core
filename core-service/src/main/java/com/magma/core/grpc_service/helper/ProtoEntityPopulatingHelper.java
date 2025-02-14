@@ -1,17 +1,14 @@
 package com.magma.core.grpc_service.helper;
 
-import com.google.protobuf.Timestamp;
 import com.magma.dmsdata.data.entity.*;
 import com.magma.dmsdata.data.entity.Error;
 
 import com.magma.dmsdata.data.support.Arithmetic;
-import com.magma.dmsdata.data.support.Connectivity;
 import com.magma.dmsdata.data.support.DeviceParameterConfiguration;
 import com.magma.dmsdata.data.support.GeoType;
 import com.magma.dmsdata.data.support.Offset;
 import com.magma.dmsdata.data.support.Shift;
 import com.magma.dmsdata.util.ActuatorCode;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.dmsdata.util.DataInputMethod;
 
 import com.magma.util.Status;
@@ -23,15 +20,12 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Arrays;
 
 @Component
 public class ProtoEntityPopulatingHelper {
@@ -48,154 +42,13 @@ public class ProtoEntityPopulatingHelper {
         return formatter.print(dateTime);
     }
 
-    public Kit populateKitFromProto(com.magma.core.grpc_service.Kit protoKit) {
-
-        try {
-            if (protoKit != null) {
-                Kit kit = new Kit();
-                kit.setId(protoKit.getId());
-                kit.setName(protoKit.getName());
-                kit.setDescription(protoKit.getDescription());
-                kit.setKitModelId(protoKit.getKitModelId());
-
-                // kit.setModel(protoKit.getModel().); // need to generate KitModel object from
-                // the json string
-                kit.setDevices(protoKit.getDevices().getStrList());
-                kit.setDeviceMap(protoKit.getDeviceMapMap());
-
-                Map<String, Offset> offsetMap = new HashMap();
-
-                for (Map.Entry<String, com.magma.core.grpc_service.Offset> entry : protoKit.getOffsetMapMap()
-                        .entrySet()) {
-                    String key = entry.getKey();
-                    Offset offset = new Offset();
-                    offset.setActuator(entry.getValue().getActuator());
-                    offset.setSensor(entry.getValue().getSensor());
-                    offsetMap.put(key, offset);
-                }
-                kit.setOffsetMap(offsetMap);
-
-                Map<Integer, Property> propertyMap = new HashMap();
-
-                for (Map.Entry<Integer, com.magma.core.grpc_service.Property> entry : protoKit.getPropertyMapMap()
-                        .entrySet()) {
-                    Integer key = entry.getKey();
-
-                    Property property = null;
-                    property = populatePropertyFromProto(entry.getValue());
-                    propertyMap.put(key, property);
-
-                }
-                kit.setPropertyMap(propertyMap);
-
-                Map<Integer, Shift> shiftMap = new HashMap();
-
-                for (Map.Entry<Integer, com.magma.core.grpc_service.Shift> entry : protoKit.getShiftMapMap()
-                        .entrySet()) {
-                    Integer key = entry.getKey();
-                    Shift shift = new Shift();
-
-                    com.magma.core.grpc_service.Shift protoShift = entry.getValue();
-                    shift.setOperation(Arithmetic.valueOf(String.valueOf(protoShift.getOperation())));
-                    shift.setMeta(protoShift.getMetaMap());
-
-                    shiftMap.put(key, shift);
-                }
-                kit.setShiftMap(shiftMap);
-
-                Map<Integer, Action> actionMap = new HashMap();
-
-                for (Map.Entry<Integer, com.magma.core.grpc_service.Action> entry : protoKit.getActionMapMap()
-                        .entrySet()) {
-                    Integer key = entry.getKey();
-                    Action action = new Action();
-
-                    com.magma.core.grpc_service.Action protoAction = entry.getValue();
-                    action.setId(protoAction.getId());
-                    action.setKitId(protoAction.getKitId());
-                    action.setNumber(protoAction.getNumber());
-                    action.setCode(ActuatorCode.valueOf(protoAction.getCode()));
-
-                    if (protoAction.getTime() != null && !"".equals(protoAction.getTime())) {
-                        action.setTime(fmt.parseDateTime(protoAction.getTime()));
-                    }
-                    action.setValue(protoAction.getValue());
-                    if (protoAction.getCreationDate() != null && !"".equals(protoAction.getCreationDate())) {
-                        action.setCreationDate(fmt.parseDateTime(protoAction.getCreationDate()));
-                    }
-                    if (protoAction.getModifiedDate() != null && !"".equals(protoAction.getModifiedDate())) {
-                        action.setModifiedDate(fmt.parseDateTime(protoAction.getModifiedDate()));
-                    }
-                    actionMap.put(key, action);
-                }
-                kit.setActionMap(actionMap);
-
-                Geo geo = new Geo();
-                com.magma.core.grpc_service.Geo protoGeo = protoKit.getGeo();
-                geo.setId(protoGeo.getId());
-                geo.setKitId(protoGeo.getKitId());
-                geo.setType(GeoType.valueOf(String.valueOf(protoGeo.getType())));
-                if (protoGeo.getTime() != null && !"".equals(protoGeo.getTime())) {
-                    geo.setTime(fmt.parseDateTime(protoGeo.getTime()));
-                }
-
-                geo.setLat(protoGeo.getLat());
-                geo.setLng(protoGeo.getLng());
-                geo.setRelativeLocation(protoGeo.getRelativeLocationMap());
-
-                kit.setGeo(geo);
-
-                Battery battery = new Battery();
-                com.magma.core.grpc_service.Battery protoBattery = protoKit.getBattery();
-
-                battery.setLow(protoBattery.getLow());
-                battery.setHigh(protoBattery.getHigh());
-
-                battery.setReading(populatePropertyFromProto(protoBattery.getReading()));
-
-                if (protoBattery.getCreationDate() != null && !"".equals(protoBattery.getCreationDate())) {
-                    battery.setCreationDate(fmt.parseDateTime(protoBattery.getCreationDate()));
-                }
-                if (protoBattery.getModifiedDate() != null && !"".equals(protoBattery.getModifiedDate())) {
-                    battery.setModifiedDate(fmt.parseDateTime(protoBattery.getModifiedDate()));
-                }
-
-                kit.setBattery(battery);
-                kit.setMaintain(protoKit.getMaintain());
-                kit.setAlertLevel(protoKit.getAlertLevel());
-                kit.setInterval(protoKit.getInterval());
-                kit.setPersistence(protoKit.getPersistence());
-                kit.setOffline(protoKit.getOffline());
-                kit.setStatus(Status.valueOf(String.valueOf(protoKit.getStatus())));
-                kit.setAlerts(protoKit.getAlertsMap());
-                kit.setMetaData(protoKit.getMetaDataMap());
-
-                kit.setInputMethod(DataInputMethod.valueOf(String.valueOf(protoKit.getInputMethod())));
-
-                if (protoKit.getLastSeen() != null && !"".equals(protoKit.getLastSeen())) {
-                    kit.setLastSeen(fmt.parseDateTime(protoKit.getLastSeen()));
-                }
-                if (protoKit.getCreationDate() != null && !"".equals(protoKit.getCreationDate())) {
-                    kit.setCreationDate(fmt.parseDateTime(protoKit.getCreationDate()));
-                }
-
-                return kit;
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error while populateKitFromProto ", e);
-        }
-        return null;
-    }
-
     public Property populatePropertyFromProto(com.magma.core.grpc_service.Property protoProperty) {
         Property property = new Property();
 
         property.setId(protoProperty.getId());
         property.setKitId(protoProperty.getKitId());
         property.setNumber(protoProperty.getNumber());
-        property.setCode(populateSensorCodeFromProto(protoProperty.getCode()));
+        property.setCode(protoProperty.getCode());
 
         if (protoProperty.getTime() != null && !"".equals(protoProperty.getTime())) {
             property.setTime(fmt.parseDateTime(protoProperty.getTime()));
@@ -230,8 +83,6 @@ public class ProtoEntityPopulatingHelper {
                 device.setKitId(protoDevice.getKitId());
                 device.setDescription(protoDevice.getDescription());
                 device.setNoOfSensors(protoDevice.getNoOfSensors());
-                SensorCode[] sensorCodes = Arrays.stream(SensorCode.values())
-                    .toArray(SensorCode[]::new);
                 device.setNoOfActuators(protoDevice.getNoOfActuators());
                 device.setActuatorCodes(protoDevice.getActuatorCodesList().toArray(new ActuatorCode[0]));
                 device.setInterval(protoDevice.getInterval());
@@ -505,210 +356,210 @@ public class ProtoEntityPopulatingHelper {
         }
     }
 
-    public SensorCode populateSensorCodeFromProto(com.magma.core.grpc_service.SensorCode protoSensorCode) {
+    public String populateSensorCodeFromProto(com.magma.core.grpc_service.SensorCode protoSensorCode) {
         try {
             if (protoSensorCode != null) {
                 switch (protoSensorCode.getSensorCode()) {
                     case S:
-                        return SensorCode.S;
+                        return "S";
                     case T:
-                        return SensorCode.T;
+                        return "T";
                     case H:
-                        return SensorCode.H;
+                        return "H";
                     case M:
-                        return SensorCode.M;
+                        return "M";
                     case MA:
-                        return SensorCode.MA;
+                        return "MA";
                     case MEA:
-                        return SensorCode.MEA;
+                        return "MEA";
                     case MEA0:
-                        return SensorCode.MEA0;
+                        return "MEA0";
                     case MEA1:
-                        return SensorCode.MEA1;
+                        return "MEA1";
                     case MEA2:
-                        return SensorCode.MEA2;
+                        return "MEA2";
                     case MEA3:
-                        return SensorCode.MEA3;
+                        return "MEA3";
                     case MEA4:
-                        return SensorCode.MEA4;
+                        return "MEA4";
                     case IRO:
-                        return SensorCode.IRO;
+                        return "IRO";
                     case N:
-                        return SensorCode.N;
+                        return "N";
                     case K:
-                        return SensorCode.K;
+                        return "K";
                     case V:
-                        return SensorCode.V;
+                        return "V";
                     case W:
-                        return SensorCode.W;
+                        return "W";
                     case G:
-                        return SensorCode.G;
+                        return "G";
                     case B:
-                        return SensorCode.B;
+                        return "B";
                     case BC:
-                        return SensorCode.BC;
+                        return "BC";
                     case RA:
-                        return SensorCode.RA;
+                        return "RA";
                     case BL:
-                        return SensorCode.BL;
+                        return "BL";
                     case RSSI:
-                        return SensorCode.RSSI;
+                        return "RSSI";
                     case NSR:
-                        return SensorCode.NSR;
+                        return "NSR";
                     case LPG:
-                        return SensorCode.LPG;
+                        return "LPG";
                     case D:
-                        return SensorCode.D;
+                        return "D";
                     case R:
-                        return SensorCode.R;
+                        return "R";
                     case O3:
-                        return SensorCode.O3;
+                        return "O3";
                     case CO:
-                        return SensorCode.CO;
+                        return "CO";
                     case DS:
-                        return SensorCode.DS;
+                        return "DS";
                     case LI:
-                        return SensorCode.LI;
+                        return "LI";
                     case LIA:
-                        return SensorCode.LIA;
+                        return "LIA";
                     case LIA1:
-                        return SensorCode.LIA1;
+                        return "LIA1";
                     case CN:
-                        return SensorCode.CN;
+                        return "CN";
                     case CNA:
-                        return SensorCode.CNA;
+                        return "CNA";
                     case PHA:
-                        return SensorCode.PHA;
+                        return "PHA";
                     case PH:
-                        return SensorCode.PH;
+                        return "PH";
                     case CS:
-                        return SensorCode.CS;
+                        return "CS";
                     case E:
-                        return SensorCode.E;
+                        return "E";
                     case L:
-                        return SensorCode.L;
+                        return "L";
                     case RL:
-                        return SensorCode.RL;
+                        return "RL";
                     case HB:
-                        return SensorCode.HB;
+                        return "HB";
                     case X:
-                        return SensorCode.X;
+                        return "X";
                     case Y:
-                        return SensorCode.Y;
+                        return "Y";
                     case RF:
-                        return SensorCode.RF;
+                        return "RF";
                     case CRF:
-                        return SensorCode.CRF;
+                        return "CRF";
                     case EV:
-                        return SensorCode.EV;
+                        return "EV";
                     case WD:
-                        return SensorCode.WD;
+                        return "WD";
                     case WS:
-                        return SensorCode.WS;
+                        return "WS";
                     case SI:
-                        return SensorCode.SI;
+                        return "SI";
                     case ST:
-                        return SensorCode.ST;
+                        return "ST";
                     case P:
-                        return SensorCode.P;
+                        return "P";
                     case WI:
-                        return SensorCode.WI;
+                        return "WI";
                     case CT:
-                        return SensorCode.CT;
+                        return "CT";
                     case CTD:
-                        return SensorCode.CTD;
+                        return "CTD";
                     case YC:
-                        return SensorCode.YC;
+                        return "YC";
                     case PS:
-                        return SensorCode.PS;
+                        return "PS";
                     case IT:
-                        return SensorCode.IT;
+                        return "IT";
                     case SS:
-                        return SensorCode.SS;
+                        return "SS";
                     case CF:
-                        return SensorCode.CF;
+                        return "CF";
                     case RT:
-                        return SensorCode.RT;
+                        return "RT";
                     case LS:
-                        return SensorCode.LS;
+                        return "LS";
                     case CE_N:
-                        return SensorCode.CE_N;
+                        return "CE_N";
                     case CE_P:
-                        return SensorCode.CE_P;
+                        return "CE_P";
                     case CE_K:
-                        return SensorCode.CE_K;
+                        return "CE_K";
                     case GN:
-                        return SensorCode.GN;
+                        return "GN";
                     case RD:
-                        return SensorCode.RD;
+                        return "RD";
                     case YW:
-                        return SensorCode.YW;
+                        return "YW";
                     case C:
-                        return SensorCode.C;
+                        return "C";
                     case A:
-                        return SensorCode.A;
+                        return "A";
                     case ID_MSG:
-                        return SensorCode.ID_MSG;
+                        return "ID_MSG";
                     case ID_IV:
-                        return SensorCode.ID_IV;
+                        return "ID_IV";
                     case AP:
-                        return SensorCode.AP;
+                        return "AP";
                     case CP_A:
-                        return SensorCode.CP_A;
+                        return "CP_A";
                     case CP_B:
-                        return SensorCode.CP_B;
+                        return "CP_B";
                     case CP_C:
-                        return SensorCode.CP_C;
+                        return "CP_C";
                     case VP_AN:
-                        return SensorCode.VP_AN;
+                        return "VP_AN";
                     case VP_BN:
-                        return SensorCode.VP_BN;
+                        return "VP_BN";
                     case VP_CN:
-                        return SensorCode.VP_CN;
+                        return "VP_CN";
                     case AC:
-                        return SensorCode.AC;
+                        return "AC";
                     case LF:
-                        return SensorCode.LF;
+                        return "LF";
                     case AC_AP:
-                        return SensorCode.AC_AP;
+                        return "AC_AP";
                     case AC_RP:
-                        return SensorCode.AC_RP;
+                        return "AC_RP";
                     case AC_PF:
-                        return SensorCode.AC_PF;
+                        return "AC_PF";
                     case AC_E:
-                        return SensorCode.AC_E;
+                        return "AC_E";
                     case DC_C:
-                        return SensorCode.DC_C;
+                        return "DC_C";
                     case DC_V:
-                        return SensorCode.DC_V;
+                        return "DC_V";
                     case DC_P:
-                        return SensorCode.DC_P;
+                        return "DC_P";
                     case OS:
-                        return SensorCode.OS;
+                        return "OS";
                     case V_PCC:
-                        return SensorCode.V_PCC;
+                        return "V_PCC";
                     case S_PV:
-                        return SensorCode.S_PV;
+                        return "S_PV";
                     case S_ECP:
-                        return SensorCode.S_ECP;
+                        return "S_ECP";
                     case CC:
-                        return SensorCode.CC;
+                        return "CC";
                     case T_RPI:
-                        return SensorCode.T_RPI;
+                        return "T_RPI";
                     case T_C:
-                        return SensorCode.T_C;
+                        return "T_C";
                     case S_D:
-                        return SensorCode.S_D;
+                        return "S_D";
                     case S_M:
-                        return SensorCode.S_M;
+                        return "S_M";
                     case S_U:
-                        return SensorCode.S_U;
+                        return "S_U";
                     case EF:
-                        return SensorCode.EF;
+                        return "EF";
                     case N_ID:
-                        return SensorCode.N_ID;
+                        return "N_ID";
                     case S_ID:
-                        return SensorCode.S_ID;
+                        return "S_ID";
                     default:
                         return null;
                 }
@@ -741,18 +592,6 @@ public class ProtoEntityPopulatingHelper {
             LOGGER.error("Error while populateErrorFromProto ", e);
         }
         return null;
-    }
-
-    public List<Kit> populateKitListFromProto(List<com.magma.core.grpc_service.Kit> protoKitList) {
-        List<Kit> kitList = new ArrayList<>();
-        try {
-            for (com.magma.core.grpc_service.Kit protoKit : protoKitList) {
-                kitList.add(populateKitFromProto(protoKit));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error while populateKitListFromProto ", e);
-        }
-        return kitList;
     }
 
     public List<Property> populatePropertyListFromProto(List<com.magma.core.grpc_service.Property> protoPropertyList) {
@@ -798,57 +637,6 @@ public class ProtoEntityPopulatingHelper {
     }
 
     // populate proto
-
-    public com.magma.core.grpc_service.Kit populateProtoKitEntity(Kit kit) {
-        try {
-            if (kit != null) {
-                return com.magma.core.grpc_service.Kit.newBuilder()
-                        .setId(kit.getId())
-                        .setName(kit.getName())
-                        .setDescription(kit.getDescription())
-                        .setKitModelId(kit.getKitModelId())
-                        // .setModel(com.magma.core.grpc_service.KitModel.newBuilder().build()) // need to generate KitModel object from the json string
-                        .setDevices(com.magma.core.grpc_service.StringList.newBuilder().addAllStr(kit.getDevices()).build())
-                        // .setDeviceMap(kit.getDeviceMap())
-                        // .setOffsetMap(kit.getOffsetMap())
-                        // .setPropertyMap(kit.getPropertyMap())
-                        // .setShiftMap(kit.getShiftMap())
-                        // .setActionMap(kit.getActionMap())
-                        .setGeo(populateProtoGeoEntity(kit.getGeo()))
-                        .setBattery(convertBatteryToGrpcBattery(kit.getBattery()))
-                        .setMaintain(kit.getMaintain())
-                        .setAlertLevel(kit.getAlertLevel())
-                        .setInterval(kit.getInterval())
-                        .setPersistence(kit.getPersistence())
-                        .setOffline(kit.getOffline())
-                        .setStatus(convertStatusToGrpcStatus(kit.getStatus()))
-                        // .setAlerts(kit.getAlerts())
-                        // .setMetaData(kit.getMetaData())
-                        .setInputMethod(convertDataInputMethodToGrpcDataInputMethodT(kit.getInputMethod()))
-                        .setLastSeen(convertDateTimeToString(kit.getLastSeen()))
-                        .setCreationDate(convertDateTimeToString(kit.getCreationDate()))
-                        .build();
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error while populate Proto Kit Entity ", e);
-        }
-        return null;
-    }
-
-    public List<com.magma.core.grpc_service.Kit> populateProtoKitEntityList(List<Kit> kits) {
-        List<com.magma.core.grpc_service.Kit> protoKits = new ArrayList<>();
-        try {
-            for (Kit kit : kits) {
-                protoKits.add(populateProtoKitEntity(kit));
-            }
-        } catch (Exception e) {
-            LOGGER.error("Error while populateProtoKitList ", e);
-        }
-        return protoKits;
-    }
-
     public com.magma.core.grpc_service.Geo populateProtoGeoEntity(Geo geo) {
         try {
             if (geo != null) {
@@ -870,209 +658,209 @@ public class ProtoEntityPopulatingHelper {
         return null;
     }
 
-    public com.magma.core.grpc_service.SensorCode populateProtoSensorCode(SensorCode sensorCodeEnum) {
+    public com.magma.core.grpc_service.SensorCode populateProtoSensorCode(String sensorCodeEnum) {
         try {
             if (sensorCodeEnum != null) {
                 switch (sensorCodeEnum) {
-                    case S:
+                    case "S":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S).build();
-                    case T:
+                    case "T":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.T).build();
-                    case H:
+                    case "H":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.H).build();
-                    case M:
+                    case "M":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.M).build();
-                    case MA:
+                    case "MA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MA).build();
-                    case MEA:
+                    case "MEA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA).build();
-                    case MEA0:
+                    case "MEA0":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA0).build();
-                    case MEA1:
+                    case "MEA1":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA1).build();
-                    case MEA2:
+                    case "MEA2":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA2).build();
-                    case MEA3:
+                    case "MEA3":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA3).build();
-                    case MEA4:
+                    case "MEA4":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.MEA4).build();
-                    case IRO:
+                    case "IRO":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.IRO).build();
-                    case N:
+                    case "N":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.N).build();
-                    case K:
+                    case "K":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.K).build();
-                    case V:
+                    case "V":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.V).build();
-                    case W:
+                    case "W":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.W).build();
-                    case G:
+                    case "G":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.G).build();
-                    case B:
+                    case "B":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.B).build();
-                    case BC:
+                    case "BC":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.BC).build();
-                    case RA:
+                    case "RA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RA).build();
-                    case BL:
+                    case "BL":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.BL).build();
-                    case RSSI:
+                    case "RSSI":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RSSI).build();
-                    case NSR:
+                    case "NSR":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.NSR).build();
-                    case LPG:
+                    case "LPG":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LPG).build();
-                    case D:
+                    case "D":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.D).build();
-                    case R:
+                    case "R":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.R).build();
-                    case O3:
+                    case "O3":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.O3).build();
-                    case CO:
+                    case "CO":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CO).build();
-                    case DS:
+                    case "DS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.DS).build();
-                    case LI:
+                    case "LI":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LI).build();
-                    case LIA:
+                    case "LIA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LIA).build();
-                    case LIA1:
+                    case "LIA1":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LIA1).build();
-                    case CN:
+                    case "CN":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CN).build();
-                    case CNA:
+                    case "CNA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CNA).build();
-                    case PHA:
+                    case "PHA":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.PHA).build();
-                    case PH:
+                    case "PH":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.PH).build();
-                    case CS:
+                    case "CS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CS).build();
-                    case E:
+                    case "E":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.E).build();
-                    case L:
+                    case "L":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.L).build();
-                    case RL:
+                    case "RL":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RL).build();
-                    case HB:
+                    case "HB":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.HB).build();
-                    case X:
+                    case "X":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.X).build();
-                    case Y:
+                    case "Y":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.Y).build();
-                    case RF:
+                    case "RF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RF).build();
-                    case CRF:
+                    case "CRF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CRF).build();
-                    case EV:
+                    case "EV":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.EV).build();
-                    case WD:
+                    case "WD":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.WD).build();
-                    case WS:
+                    case "WS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.WS).build();
-                    case SI:
+                    case "SI":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.SI).build();
-                    case ST:
+                    case "ST":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.ST).build();
-                    case P:
+                    case "P":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.P).build();
-                    case WI:
+                    case "WI":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.WI).build();
-                    case CT:
+                    case "CT":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CT).build();
-                    case CTD:
+                    case "CTD":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CTD).build();
-                    case YC:
+                    case "YC":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.YC).build();
-                    case PS:
+                    case "PS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.PS).build();
-                    case IT:
+                    case "IT":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.IT).build();
-                    case SS:
+                    case "SS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.SS).build();
-                    case CF:
+                    case "CF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CF).build();
-                    case RT:
+                    case "RT":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RT).build();
-                    case LS:
+                    case "LS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LS).build();
-                    case CE_N:
+                    case "CE_N":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CE_N).build();
-                    case CE_P:
+                    case "CE_P":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CE_P).build();
-                    case CE_K:
+                    case "CE_K":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CE_K).build();
-                    case GN:
+                    case "GN":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.GN).build();
-                    case RD:
+                    case "RD":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.RD).build();
-                    case YW:
+                    case "YW":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.YW).build();
-                    case C:
+                    case "C":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.C).build();
-                    case A:
+                    case "A":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.A).build();
-                    case ID_MSG:
+                    case "ID_MSG":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.ID_MSG).build();
-                    case ID_IV:
+                    case "ID_IV":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.ID_IV).build();
-                    case AP:
+                    case "AP":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AP).build();
-                    case CP_A:
+                    case "CP_A":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CP_A).build();
-                    case CP_B:
+                    case "CP_B":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CP_B).build();
-                    case CP_C:
+                    case "CP_C":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CP_C).build();
-                    case VP_AN:
+                    case "VP_AN":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.VP_AN).build();
-                    case VP_BN:
+                    case "VP_BN":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.VP_BN).build();
-                    case VP_CN:
+                    case "VP_CN":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.VP_CN).build();
-                    case AC:
+                    case "AC":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AC).build();
-                    case LF:
+                    case "LF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.LF).build();
-                    case AC_AP:
+                    case "AC_AP":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AC_AP).build();
-                    case AC_RP:
+                    case "AC_RP":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AC_RP).build();
-                    case AC_PF:
+                    case "AC_PF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AC_PF).build();
-                    case AC_E:
+                    case "AC_E":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.AC_E).build();
-                    case DC_C:
+                    case "DC_C":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.DC_C).build();
-                    case DC_V:
+                    case "DC_V":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.DC_V).build();
-                    case DC_P:
+                    case "DC_P":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.DC_P).build();
-                    case OS:
+                    case "OS":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.OS).build();
-                    case V_PCC:
+                    case "V_PCC":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.V_PCC).build();
-                    case S_PV:
+                    case "S_PV":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_PV).build();
-                    case S_ECP:
+                    case "S_ECP":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_ECP).build();
-                    case CC:
+                    case "CC":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.CC).build();
-                    case T_RPI:
+                    case "T_RPI":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.T_RPI).build();
-                    case T_C:
+                    case "T_C":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.T_C).build();
-                    case S_D:
+                    case "S_D":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_D).build();
-                    case S_M:
+                    case "S_M":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_M).build();
-                    case S_U:
+                    case "S_U":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_U).build();
-                    case EF:
+                    case "EF":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.EF).build();
-                    case N_ID:
+                    case "N_ID":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.N_ID).build();
-                    case S_ID:
+                    case "S_ID":
                         return com.magma.core.grpc_service.SensorCode.newBuilder().setSensorCode(com.magma.core.grpc_service.SensorCode.SensorCodeEnum.S_ID).build();
                     default:
                         return null;
@@ -1138,7 +926,7 @@ public class ProtoEntityPopulatingHelper {
                         .setId(property.getId())
                         .setKitId(property.getKitId())
                         .setNumber(property.getNumber())
-                        .setCode(populateProtoSensorCode(property.getCode()))
+                        .setCode(property.getCode())
                         .setTime(convertDateTimeToString(property.getTime()))
                         .setValue(property.getValue())
                         .setPivot(property.getPivot())

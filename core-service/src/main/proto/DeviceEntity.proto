@@ -48,7 +48,7 @@ message Device {
   google.protobuf.Timestamp lastSeen = 25;
   google.protobuf.Timestamp creationDate = 26;
   google.protobuf.Timestamp modifiedDate = 27;
-  int32 batchNumber = 28;
+  string batchNumber = 28;
   ProductData product = 29;
   DeviceParameterConfiguration deviceParameterConfiguration = 30;
   map<string, string> references = 31;

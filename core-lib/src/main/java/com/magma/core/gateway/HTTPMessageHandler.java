@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class HTTPMessageHandler {
 
@@ -22,7 +24,14 @@ public class HTTPMessageHandler {
 
         try {
             LOGGER.debug("Http Data : {}", data);
-            dataProcessorService.doHandle(kit, data.getData());
+            String timeHttp = data.getTime();
+
+            if(timeHttp != null && !timeHttp.isEmpty()) {
+                dataProcessorService.doHandle(kit, data.getData(), timeHttp);
+            } else {
+                dataProcessorService.doHandle(kit, data.getData());
+            }
+
             return "Success";
 
         } catch (Exception e) {
@@ -48,5 +57,20 @@ public class HTTPMessageHandler {
             LOGGER.error("Exception Got in HTTP : ", e);
             return "Error";
         }
+    }
+
+    public String handleMessageList(String kit, List<DataHTTP> dataHTTPList) {
+        LOGGER.debug("Http DataList : {}", dataHTTPList);
+
+        for (DataHTTP data : dataHTTPList) {
+            String res=handleMessage(kit, data);
+
+            if (res.equalsIgnoreCase("Error")) {
+                return "Error";
+            }
+        }
+
+        return "Success";
+
     }
 }

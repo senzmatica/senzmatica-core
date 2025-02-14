@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.data.support.Operation;
 import com.magma.dmsdata.util.ActuatorCode;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaUtil;
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
@@ -26,11 +25,11 @@ public class KitModel {
 
     private Integer noOfSensors;
 
-    private SensorCode[] sensors;
+    private String[] sensors;
 
     private Integer noOfProperties;
 
-    private SensorCode[] properties;
+    private String[] properties;
 
     private Integer noOfActuators;
 
@@ -42,8 +41,9 @@ public class KitModel {
 
     private Set<Operation> operations = new HashSet<>();
 
+
     @JsonIgnore
-    // <Sensor Number, Operations>
+    //<Sensor Number, Operations>
     private Map<Integer, Set<Operation>> realTimeSet = new HashMap<>();
 
     @JsonIgnore
@@ -82,6 +82,7 @@ public class KitModel {
                 operations != null;
     }
 
+
     public String getId() {
         return id;
     }
@@ -106,11 +107,11 @@ public class KitModel {
         this.noOfSensors = noOfSensors;
     }
 
-    public SensorCode[] getSensors() {
+    public String[] getSensors() {
         return sensors;
     }
 
-    public void setSensors(SensorCode[] sensors) {
+    public void setSensors(String[] sensors) {
         this.sensors = sensors;
     }
 
@@ -122,11 +123,11 @@ public class KitModel {
         this.noOfProperties = noOfProperties;
     }
 
-    public SensorCode[] getProperties() {
+    public String[] getProperties() {
         return properties;
     }
 
-    public void setProperties(SensorCode[] properties) {
+    public void setProperties(String[] properties) {
         this.properties = properties;
     }
 
@@ -233,6 +234,7 @@ public class KitModel {
     public void setModifiedDate(DateTime modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
+
 
     @Override
     public String toString() {

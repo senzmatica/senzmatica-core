@@ -1,6 +1,8 @@
 package com.magma.dmsdata.data.support;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.magma.util.MagmaDateTimeDeserializer;
 import com.magma.util.MagmaDateTimeSerializer;
 import org.joda.time.DateTime;
 
@@ -8,6 +10,7 @@ public class OTAUpgradeHistory {
     private String actionBy;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
+    @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
     private DateTime updatedDate;
 
     private String currentVersion;

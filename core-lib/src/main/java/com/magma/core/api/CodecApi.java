@@ -1,14 +1,19 @@
 package com.magma.core.api;
 
+import com.magma.core.service.DataProcessorService;
 import com.magma.dmsdata.data.entity.Device;
 import com.magma.dmsdata.data.entity.MagmaCodec;
+import com.magma.dmsdata.data.dto.MagmaCodecDTO;
 import com.magma.core.service.MagmaCodecService;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.validation.BindingResult;
+import com.magma.dmsdata.validation.BadRequestException;
 
 import java.util.List;
+import javax.validation.Valid;
 
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)  //TODO: Need To Specify Domain
@@ -16,18 +21,27 @@ public class CodecApi {
     @Autowired
     MagmaCodecService magmaCodecService;
 
+    @Autowired
+    DataProcessorService dataProcessorService;
+
     @RequestMapping(value = "core/codec", method = RequestMethod.GET)
     public MagmaResponse<List<MagmaCodec>> getAllCodecs() {
         return new MagmaResponse<>(magmaCodecService.findAllCodec());
     }
 
-    @RequestMapping(value = "/core/codec", method = RequestMethod.POST)
-    public MagmaResponse<MagmaCodec> createMagmaCodec(@RequestParam(value = "decoderFile", required = false) MultipartFile decoderFile,
-                                                      @RequestParam(value = "encoderFile", required = false) MultipartFile encoderFile,
-                                                      @RequestParam("scriptFormat") String scriptFormat,
-                                                      @RequestParam("codecName") String codecName) {
+    @RequestMapping(value= "/core/codec/{codecId}", method = RequestMethod.GET)
+    public MagmaResponse<MagmaCodec> getCodec(@PathVariable("codecId") String codecId) {
+        return new MagmaResponse<>(magmaCodecService.getCodec(codecId));
+    }
 
-        MagmaCodec magmaCodec = magmaCodecService.createMagmaCodec(decoderFile, encoderFile, codecName, scriptFormat);
+    @RequestMapping(value = "/core/codec", method = RequestMethod.POST)
+    public MagmaResponse<MagmaCodec> createMagmaCodec(@ModelAttribute @Valid MagmaCodecDTO magmaCodecDTO,
+                                                      BindingResult result) {
+        if(result.hasErrors()){
+            throw new BadRequestException(result.getAllErrors());
+        }
+
+        MagmaCodec magmaCodec = magmaCodecService.createMagmaCodec(magmaCodecDTO);
         return new MagmaResponse<>(magmaCodec);
     }
 
@@ -47,7 +61,7 @@ public class CodecApi {
         return new MagmaResponse<>(magmaCodecService.deleteCodec(codecId));
     }
 
-    @RequestMapping(value = "/core/codec/{codecId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/core/codec/{codecId}/connected-devices", method = RequestMethod.GET)
     public MagmaResponse<List<Device>> connectedDevices(@PathVariable("codecId") String codecId) {
         return new MagmaResponse<>(magmaCodecService.viewConnectedDevice(codecId));
     }
@@ -75,5 +89,10 @@ public class CodecApi {
     public MagmaResponse<List<Device>> disconnectDeviceAndDecoder(@RequestBody List<String> deviceIds) {
         List<Device> devices = magmaCodecService.bulkDisconnectDeviceAndCodec(deviceIds);
         return new MagmaResponse<>(devices);
+    }
+
+    @RequestMapping(value = "/core/codec/{codecId}/test", method = RequestMethod.POST)
+    public MagmaResponse<String> testCodec(@PathVariable("codecId") String codecId,@RequestBody String payLoad) {
+        return new MagmaResponse<>(dataProcessorService.handleCodec(codecId,payLoad));
     }
 }

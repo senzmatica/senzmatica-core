@@ -1,15 +1,16 @@
 package com.magma.dmsdata.data.support;
 
+
 import java.util.Objects;
 import java.util.Set;
 
-public class ProductParameter {
+public class RemoteConfigField {
 
     private String parameterCategory;
 
     private String parameter;
 
-    private String id;
+    private String parameterId;
 
     private String inputType;
 
@@ -17,9 +18,7 @@ public class ProductParameter {
 
     private String defaultValue;
 
-    private Set<String> defaultValues;
-
-    public ProductParameter() {
+    public RemoteConfigField() {
     }
 
     public String getParameter() {
@@ -30,12 +29,12 @@ public class ProductParameter {
         this.parameter = parameter;
     }
 
-    public String getId() {
-        return id;
+    public String getParameterId() {
+        return parameterId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setParameterId(String id) {
+        this.parameterId = id;
     }
 
     public String getInputType() {
@@ -66,27 +65,20 @@ public class ProductParameter {
         return parameterCategory;
     }
 
-    public Set<String> getDefaultValues() {
-        return defaultValues;
-    }
-
-    public void setDefaultValues(Set<String> defaultValues) {
-        this.defaultValues = defaultValues;
-    }
-
     public void setParameterCategory(String parameterCategory) {
         this.parameterCategory = parameterCategory;
     }
 
-    public boolean isEqual(ProductParameter other) {
+    public boolean isEqual(RemoteConfigField other) {
         if (other == this) {
             return true;
         }
         return Objects.equals(parameterCategory, other.parameterCategory) &&
                 Objects.equals(parameter, other.parameter) &&
-                Objects.equals(id, other.id) &&
+                Objects.equals(parameterId, other.parameterId) &&
                 Objects.equals(inputType, other.inputType) &&
                 Objects.equals(format, other.format) &&
                 Objects.equals(defaultValue, other.defaultValue);
     }
 }
+

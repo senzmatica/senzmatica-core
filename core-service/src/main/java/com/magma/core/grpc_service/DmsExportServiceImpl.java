@@ -3,7 +3,6 @@ package com.magma.core.grpc_service;
 import com.google.protobuf.Empty;
 import com.magma.dmsdata.data.entity.Device;
 import com.magma.dmsdata.data.entity.Geo;
-import com.magma.dmsdata.data.entity.Kit;
 import com.magma.dmsdata.data.entity.Property;
 import com.magma.core.grpc_service.helper.ProtoEntityPopulatingHelper;
 import com.magma.dmsdata.data.entity.Action;
@@ -70,23 +69,6 @@ public class DmsExportServiceImpl {
                 .build());
 
         channel.shutdown();
-    }
-
-    public List<Kit> findKitsInCorporate(String corporateId) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        FindKitsInCorporateResponse response = stub.findKitsInCorporate(FindKitsInCorporateRequest.newBuilder()
-                .setCorporateId(corporateId)
-                .build());
-
-        channel.shutdown();
-
-        return DmsEntityPopulatingHelper.populateKitListFromProto(response.getKitsList());
     }
 
     public String referenceName(String kitId) {
@@ -234,94 +216,5 @@ public class DmsExportServiceImpl {
         }
 
         channel.shutdown();
-    }
-
-    public Geo findLbs(Kit kit) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        GeoResponse response = stub.findLbs(FindLbsRequest.newBuilder()
-                .setKit(DmsEntityPopulatingHelper.populateProtoKitEntity(kit))
-                .build());
-
-        channel.shutdown();
-
-        return DmsEntityPopulatingHelper.populateGeoFromProto(response.getGeo());
-    }
-
-    public String sendAlert(Kit kit, Alert alert) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        StringResponse response = stub.sendAlert(SendAlertRequest.newBuilder()
-                .setKit(DmsEntityPopulatingHelper.populateProtoKitEntity(kit))
-                .setAlert(DmsEntityPopulatingHelper.populateProtoAlertEntity(alert))
-                .build());
-
-        channel.shutdown();
-
-        return response.getResponse();
-    }
-
-    public String sendAlertOff(Kit kit, Alert alert) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        StringResponse response = stub.sendAlertOff(SendAlertOffRequest.newBuilder()
-                .setKit(DmsEntityPopulatingHelper.populateProtoKitEntity(kit))
-                .setAlert(DmsEntityPopulatingHelper.populateProtoAlertEntity(alert))
-                .build());
-
-        channel.shutdown();
-
-        return response.getResponse();
-    }
-
-    public String sendOffline(Kit kit, Offline offline) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        StringResponse response = stub.sendOffline(SendOfflineRequest.newBuilder()
-                .setKit(DmsEntityPopulatingHelper.populateProtoKitEntity(kit))
-                .setOffline(DmsEntityPopulatingHelper.populateProtoOfflineEntity(offline))
-                .build());
-
-        channel.shutdown();
-
-        return response.getResponse();
-    }
-
-    public String sendError(Kit kit, Error error) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(dmsHost, dmsPort)
-                .usePlaintext()
-                .build();
-
-        DmsExportServiceGrpc.DmsExportServiceBlockingStub stub
-                = DmsExportServiceGrpc.newBlockingStub(channel);
-
-        StringResponse response = stub.sendError(SendErrorRequest.newBuilder()
-                .setKit(DmsEntityPopulatingHelper.populateProtoKitEntity(kit))
-                .setError(DmsEntityPopulatingHelper.populateProtoErrorEntity(error))
-                .build());
-
-        channel.shutdown();
-
-        return response.getResponse();
     }
 }

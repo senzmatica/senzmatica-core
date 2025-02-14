@@ -3,10 +3,12 @@ package com.magma.dmsdata.data.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.data.support.Acl;
-
+import com.magma.dmsdata.validation.NotEmptyString;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,10 +22,16 @@ public class Vmq_acl_auth {
 
     private String mountpoint;
 
+    @NotNull(message = "Client Id can't be null")
+    @NotEmpty(message = "Client Id can't be empty")
     private String client_id;
 
+    @NotNull(message = "Username can't be null")
+    @NotEmpty(message = "Username can't be empty")
     private String username;
 
+    @NotNull(message = "Password can't be null")
+    @NotEmpty(message = "Password can't be empty")
     private String password;
 
     private String passhash;
@@ -34,8 +42,10 @@ public class Vmq_acl_auth {
 
     private boolean isProtect = false;
 
+    @NotEmptyString(message = "Publish Acl can't be null or empty")
     private List<Acl> publish_acl = new ArrayList<>();
 
+    @NotEmptyString(message = "Subscribe Acl can't be null or empty")
     private List<Acl> subscribe_acl = new ArrayList<>();
 
     public Vmq_acl_auth() {

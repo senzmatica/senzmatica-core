@@ -20,17 +20,4 @@ public class DataProcessorServiceTest {
         System.out.println(dataProcessorService.getRLL(locTem, relativeLocation));
     }
 
-    @Test
-    public void testIRO() {
-        System.out.println(calIRO("3424/0802/20.49"));
-        System.out.println(calIRO("3434/0746/20.32"));
-//        System.out.println(calIRO("3420/1041/28.54" ));
-//        System.out.println(calIRO("3426/1018/28.54" ));
-    }
-
-
-    public double calIRO(String stringValue) {
-        return dataProcessorService.calculateIRO(stringValue);
-    }
-
 }

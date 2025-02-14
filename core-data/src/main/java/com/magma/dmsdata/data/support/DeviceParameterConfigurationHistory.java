@@ -1,9 +1,11 @@
 package com.magma.dmsdata.data.support;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.magma.dmsdata.util.UpdateStatus;
 import com.magma.util.MagmaDateTimeSerializer;
 import org.joda.time.DateTime;
 
+import java.util.List;
 import java.util.Map;
 
 public class DeviceParameterConfigurationHistory {
@@ -12,17 +14,19 @@ public class DeviceParameterConfigurationHistory {
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
     private DateTime updatedDate;
-
-    private Map<String, String> networkAndCommiunication;
+    private String messageId;
+    private UpdateStatus updateStatus;
+    private Map< String,String> networkAndCommunication;
     private Map<String, String> topicFormat;
     private Map<String, String> messageFormat;
+    private Map<String,DeviceParameterUpdateStatus> updateParamList;
 
-    public Map<String, String> getNetworkAndCommiunication() {
-        return networkAndCommiunication;
+    public Map<String, String> getNetworkAndCommunication() {
+        return networkAndCommunication;
     }
 
-    public void setNetworkAndCommiunication(Map<String, String> networkAndCommiunication) {
-        this.networkAndCommiunication = networkAndCommiunication;
+    public void setNetworkAndCommunication(Map<String, String> networkAndCommunication) {
+        this.networkAndCommunication = networkAndCommunication;
     }
 
     public Map<String, String> getTopicFormat() {
@@ -56,4 +60,28 @@ public class DeviceParameterConfigurationHistory {
     public void setUpdatedDate(DateTime updatedDate) {
         this.updatedDate = updatedDate;
     }
+
+    public void setUpdateStatus(UpdateStatus status){
+        this.updateStatus=status;
+    }
+    public UpdateStatus getUpdateStatus(){
+        return this.updateStatus;
+    }
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getMessageId(){
+        return this.messageId;
+    }
+    public void setUpdateParamList(Map<String,DeviceParameterUpdateStatus> updateParamList){
+        this.updateParamList=updateParamList;
+    }
+    public Map<String,DeviceParameterUpdateStatus>  getUpdateParamList(){
+        return this.updateParamList;
+    }
+
+
+
+
 }
