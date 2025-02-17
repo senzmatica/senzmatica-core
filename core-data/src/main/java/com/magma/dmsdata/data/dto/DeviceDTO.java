@@ -1,25 +1,25 @@
 package com.magma.dmsdata.data.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.magma.dmsdata.data.entity.Battery;
 import com.magma.dmsdata.data.support.Connectivity;
+import com.magma.dmsdata.data.support.DeviceParameterConfiguration;
 import com.magma.dmsdata.data.support.Protocol;
 import com.magma.dmsdata.data.support.Shift;
 import com.magma.dmsdata.util.ActuatorCode;
 import com.magma.dmsdata.util.Configuration;
-import com.magma.dmsdata.util.SensorCode;
+import com.magma.dmsdata.util.UpdateStatus;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.joda.time.DateTime;
 
 import javax.validation.constraints.NotNull;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeviceDTO {
 
     @NotNull(message = "Please provide device id")
@@ -30,7 +30,7 @@ public class DeviceDTO {
     @NotEmpty(message = "Device name can't be empty")
     private String name;
 
-    private SensorCode[] sensorCodes;
+    private String[] sensorCodes;
 
     private Integer noOfSensors;
 
@@ -39,8 +39,12 @@ public class DeviceDTO {
     private Integer noOfActuators;
 
     private Boolean maintain;
+
+    @NotNull(message = "Interval can't be null or empty")
     private Integer interval;
-    private Integer batchNumber;
+
+    @NotNull(message = "Batch Number can't be null or empty")
+    private String batchNumber;
 
     private Integer intervalMin = 10;
 
@@ -52,14 +56,17 @@ public class DeviceDTO {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Battery battery;
 
+    @NotNull(message = "Persistence can not be null or empty")
     private Boolean persistence;
 
+    @NotNull(message = "Connectivity can not be null or empty")
     private Connectivity connectivity;
 
     private Map<Connectivity, Map<String, String>> connectivityMatrix = new HashMap<>();
 
     private Map<Configuration, String> configurations = new HashMap<>();
 
+    @NotNull(message = "Protocol can not be null or empty")
     private Protocol protocol;
 
     private Status status;
@@ -67,11 +74,30 @@ public class DeviceDTO {
     private Map<String, String> metaData = null;
 
     private String simNumber;
-    private Map<String, String> sensorLabelMap;
 
     private String productType;
 
+    private String productId;
+
     private String temperatureUnit;
+
+    private String otaRequestTopic;
+
+    private String otaAckTopic;
+
+    private String remoteConfigTopic;
+
+    private String remoteConfigAckTopic;
+
+    private DeviceParameterConfiguration deviceParameterConfiguration;
+
+    private String magmaCodecId;
+
+    private String referenceId;
+
+    private UpdateStatus lastUpdateStatus;
+
+    private DateTime lastSeen;
 
     public DeviceDTO() {
     }
@@ -98,11 +124,11 @@ public class DeviceDTO {
         this.name = name;
     }
 
-    public SensorCode[] getSensorCodes() {
+    public String[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(SensorCode[] sensorCodes) {
+    public void setSensorCodes(String[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -248,19 +274,11 @@ public class DeviceDTO {
         this.battery = battery;
     }
 
-    public Map<String, String> getSensorLabelMap() {
-        return sensorLabelMap;
-    }
-
-    public void setSensorLabelMap(Map<String, String> sensorLabelMap) {
-        this.sensorLabelMap = sensorLabelMap;
-    }
-
-    public Integer getBatchNumber() {
+    public String getBatchNumber() {
         return batchNumber;
     }
 
-    public void setBatchNumber(Integer batchNumber) {
+    public void setBatchNumber(String batchNumber) {
         this.batchNumber = batchNumber;
     }
 
@@ -278,5 +296,120 @@ public class DeviceDTO {
 
     public void setTemperatureUnit(String temperatureUnit) {
         this.temperatureUnit = temperatureUnit;
+    }
+
+    public String getProductId() {
+        return productId;
+    }
+
+    public void setProductId(String productId) {
+        this.productId = productId;
+    }
+
+    public String getOtaRequestTopic() {
+        return otaRequestTopic;
+    }
+
+    public void setOtaRequestTopic(String otaRequestTopic) {
+        this.otaRequestTopic = otaRequestTopic;
+    }
+
+    public String getOtaAckTopic() {
+        return otaAckTopic;
+    }
+
+    public void setOtaAckTopic(String otaAckTopic) {
+        this.otaAckTopic = otaAckTopic;
+    }
+
+    public String getRemoteConfigTopic() {
+        return remoteConfigTopic;
+    }
+
+    public void setRemoteConfigTopic(String remoteConfigTopic) {
+        this.remoteConfigTopic = remoteConfigTopic;
+    }
+
+    public String getRemoteConfigAckTopic() {
+        return remoteConfigAckTopic;
+    }
+
+    public void setRemoteConfigAckTopic(String remoteConfigAckTopic) {
+        this.remoteConfigAckTopic = remoteConfigAckTopic;
+    }
+
+    public DeviceParameterConfiguration getDeviceParameterConfiguration() {
+        return deviceParameterConfiguration;
+    }
+
+    public void setDeviceParameterConfiguration(DeviceParameterConfiguration deviceParameterConfiguration) {
+        this.deviceParameterConfiguration = deviceParameterConfiguration;
+    }
+
+    public String getMagmaCodecId() {
+        return magmaCodecId;
+    }
+
+    public void setMagmaCodecId(String magmaCodecId) {
+        this.magmaCodecId = magmaCodecId;
+    }
+
+    public String getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(String referenceId) {
+        this.referenceId = referenceId;
+    }
+
+    public void setLastUpdateStatus(UpdateStatus lastUpdateStatus){
+        this.lastUpdateStatus=lastUpdateStatus;
+    }
+    public UpdateStatus getLastUpdateStatus(){
+        return this.lastUpdateStatus;
+    }
+    @Override
+    public String toString() {
+        return "DeviceDTO{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", sensorCodes=" + Arrays.toString(sensorCodes) +
+                ", noOfSensors=" + noOfSensors +
+                ", actuatorCodes=" + Arrays.toString(actuatorCodes) +
+                ", noOfActuators=" + noOfActuators +
+                ", maintain=" + maintain +
+                ", interval=" + interval +
+                ", batchNumber='" + batchNumber + '\'' +
+                ", intervalMin=" + intervalMin +
+                ", description='" + description + '\'' +
+                ", shiftMap=" + shiftMap +
+                ", battery=" + battery +
+                ", persistence=" + persistence +
+                ", connectivity=" + connectivity +
+                ", connectivityMatrix=" + connectivityMatrix +
+                ", configurations=" + configurations +
+                ", protocol=" + protocol +
+                ", status=" + status +
+                ", metaData=" + metaData +
+                ", simNumber='" + simNumber + '\'' +
+                ", productType='" + productType + '\'' +
+                ", productId='" + productId + '\'' +
+                ", temperatureUnit='" + temperatureUnit + '\'' +
+                ", otaRequestTopic='" + otaRequestTopic + '\'' +
+                ", otaAckTopic='" + otaAckTopic + '\'' +
+                ", remoteConfigTopic='" + remoteConfigTopic + '\'' +
+                ", remoteConfigAckTopic='" + remoteConfigAckTopic + '\'' +
+                ", deviceParameterConfiguration=" + deviceParameterConfiguration +
+                ", magmaCodecId='" + magmaCodecId + '\'' +
+                ", referenceId='" + referenceId + '\'' +
+                '}';
+    }
+
+    public DateTime getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(DateTime lastSeen) {
+        this.lastSeen = lastSeen;
     }
 }

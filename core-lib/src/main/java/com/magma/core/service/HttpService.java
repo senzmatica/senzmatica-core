@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.dmsdata.data.dto.HttpAclAuthDTO;
 import com.magma.dmsdata.data.entity.Http_acl_auth;
+import com.magma.core.data.repository.Http_acl_authRepository;
 import com.magma.dmsdata.util.MagmaException;
 import com.magma.dmsdata.util.MagmaStatus;
-import com.magma.core.data.repository.Http_acl_authRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -46,6 +46,10 @@ public class HttpService {
 
         Http_acl_auth http_acl_auth = http_acl_authRepository.findById(httpAclId).orElse(null);
 
+        if (http_acl_auth == null) {
+            throw new MagmaException(MagmaStatus.CLIENT_NOT_FOUND);
+        }
+
         if (!http_acl_auth.getClient_id().equals(updatedClientDTO.getClient_id())) {
             validateClientId(updatedClientDTO.getClient_id());
         }
@@ -69,6 +73,15 @@ public class HttpService {
     public List<Http_acl_auth> findAll() {
         return http_acl_authRepository.findAll();
     }
+
+    public Http_acl_auth getOneClient(String clientId) {
+        Http_acl_auth http_acl_auth = http_acl_authRepository.findById(clientId).orElse(null);
+        if (http_acl_auth == null) {
+            throw new MagmaException(MagmaStatus.CLIENT_NOT_FOUND);
+        }
+        return http_acl_auth;
+    }
+
 
     public String deleteClient(String clientId) {
         Http_acl_auth http_acl_auth = http_acl_authRepository.findById(clientId).orElse(null);
@@ -104,6 +117,30 @@ public class HttpService {
             throw new MagmaException(MagmaStatus.DUPLICATE_CLIENT_ID);
         }
 
+    }
+
+    public Http_acl_auth updateActionKeyHttp(String client_id, boolean status) {
+        Http_acl_auth client = http_acl_authRepository.findById(client_id).orElse(null);
+        LOGGER.debug("Client ID : {}, status : {}, for client  : {}", client_id, status, client);
+
+        if (client == null) {
+            LOGGER.debug("Client not available");
+            throw new MagmaException(MagmaStatus.ERROR);
+        }
+
+        if (client.isProtect()) {
+            throw new MagmaException(MagmaStatus.DATA_PROTECTED);
+        }
+
+        client.setStatus(status);
+
+        if (status) {
+            client.setClient_id(client.GetBackupClient_id());
+        } else {
+            client.setClient_id(null);
+        }
+
+        return http_acl_authRepository.save(client);
     }
 
     public Object getAccessToken(String httpAclId) {
@@ -146,4 +183,18 @@ public class HttpService {
             throw new MagmaException(MagmaStatus.ERROR);
         }
     }
+
+    public Http_acl_auth updateProtection(String clientId, boolean isProtect) {
+        Http_acl_auth http_acl_auth = http_acl_authRepository.findById(clientId).orElse(null);
+
+        if (http_acl_auth == null) {
+            throw new MagmaException(MagmaStatus.ERROR);
+        }
+
+        http_acl_auth.setProtect(isProtect);
+        http_acl_authRepository.save(http_acl_auth);
+
+        return http_acl_auth;
+    }
+
 }

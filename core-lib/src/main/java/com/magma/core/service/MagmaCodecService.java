@@ -1,12 +1,12 @@
 package com.magma.core.service;
 
+import com.magma.dmsdata.data.dto.MagmaCodecDTO;
 import com.magma.dmsdata.data.entity.Device;
 import com.magma.dmsdata.data.entity.MagmaCodec;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
 import com.magma.core.data.repository.DeviceRepository;
 import com.magma.core.data.repository.MagmaCodecRepository;
-
+import com.magma.dmsdata.util.MagmaException;
+import com.magma.dmsdata.util.MagmaStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,24 +34,28 @@ public class MagmaCodecService {
     @Autowired
     private CompileCodeFileService compileCodeFileService;
 
-    public MagmaCodec createMagmaCodec(MultipartFile decoderFile, MultipartFile encoderFile, String codecName, String scriptFormat) {
-        LOGGER.debug("Creating new codec with name : {}", codecName);
+    public MagmaCodec createMagmaCodec(MagmaCodecDTO magmaCodecDTO) {
+
+        MagmaCodec existingMagmaCodec = magmaCodecRepository.findByCodecName(magmaCodecDTO.getCodecName());
+        if (existingMagmaCodec != null) {
+            throw new MagmaException(MagmaStatus.CODEC_NAME_ALREADY_EXIST);
+        }
 
         MagmaCodec newCodec = new MagmaCodec();
 
         try {
-            if (!decoderFile.isEmpty() || !encoderFile.isEmpty()) {
+            if (!magmaCodecDTO.getDecoderFile().isEmpty() || !magmaCodecDTO.getEncoderFile().isEmpty()) {
 
-                newCodec.setCodecName(codecName);
-                newCodec.setScriptFormat(scriptFormat);
+                newCodec.setCodecName(magmaCodecDTO.getCodecName());
+                newCodec.setScriptFormat(magmaCodecDTO.getScriptFormat());
 
                 Boolean isDecoderFileValid = false;
                 Boolean isEncoderFileValid = false;
 
-                if (!decoderFile.isEmpty()) {
-                    String fileNameDecoder = StringUtils.cleanPath(decoderFile.getOriginalFilename());
+                if (!magmaCodecDTO.getDecoderFile().isEmpty()) {
+                    String fileNameDecoder = StringUtils.cleanPath(magmaCodecDTO.getDecoderFile().getOriginalFilename());
                     newCodec.setDecoderFileName(fileNameDecoder);
-                    byte[] fileByteDecoder = decoderFile.getBytes();
+                    byte[] fileByteDecoder = magmaCodecDTO.getDecoderFile().getBytes();
                     String fileContentDecoder = new String(fileByteDecoder, StandardCharsets.UTF_8);
                     newCodec.setDecoderFileContent(fileContentDecoder);
 
@@ -68,10 +73,10 @@ public class MagmaCodecService {
                     }
                 }
 
-                if (!encoderFile.isEmpty()) {
-                    String fileNameEncoder = StringUtils.cleanPath(encoderFile.getOriginalFilename());
+                if (!magmaCodecDTO.getEncoderFile().isEmpty()) {
+                    String fileNameEncoder = StringUtils.cleanPath(magmaCodecDTO.getEncoderFile().getOriginalFilename());
                     newCodec.setEncoderFileName(fileNameEncoder);
-                    byte[] fileByteEncoder = encoderFile.getBytes();
+                    byte[] fileByteEncoder = magmaCodecDTO.getEncoderFile().getBytes();
                     String fileContentEncoder = new String(fileByteEncoder, StandardCharsets.UTF_8);
                     newCodec.setEncoderFileContent(fileContentEncoder);
 
@@ -83,11 +88,11 @@ public class MagmaCodecService {
                     }
                 }
 
-                if (!decoderFile.isEmpty() && !encoderFile.isEmpty() && !isDecoderFileValid && !isEncoderFileValid) {
+                if (!magmaCodecDTO.getDecoderFile().isEmpty() && !magmaCodecDTO.getEncoderFile().isEmpty() && !isDecoderFileValid && !isEncoderFileValid) {
                     throw new MagmaException(MagmaStatus.BOTH_CODEC_NOT_COPILABLE);
-                } else if (!decoderFile.isEmpty() && !isDecoderFileValid) {
+                } else if (!magmaCodecDTO.getDecoderFile().isEmpty() && !isDecoderFileValid) {
                     throw new MagmaException(MagmaStatus.DECODER_NOT_COPILABLE);
-                } else if (!encoderFile.isEmpty() && !isEncoderFileValid) {
+                } else if (!magmaCodecDTO.getEncoderFile().isEmpty() && !isEncoderFileValid) {
                     throw new MagmaException(MagmaStatus.ENCODER_NOT_COPILABLE);
                 } else {
                     LOGGER.debug("Both files are valid");
@@ -95,7 +100,7 @@ public class MagmaCodecService {
                     return saveCodec;
                 }
             } else {
-                throw new IllegalArgumentException("Upload both encoder and decoder files.");
+                throw new MagmaException(MagmaStatus.Encoder_Decoder_file_Not_Exist);
             }
 
         } catch (IOException e) {
@@ -229,6 +234,14 @@ public class MagmaCodecService {
         });
 
         return updatedDevices;
+    }
+
+    public MagmaCodec getCodec(String codecId) {
+        MagmaCodec magmaCodec = magmaCodecRepository.findById(codecId).orElse(null);
+        if (magmaCodec == null) {
+            throw new MagmaException(MagmaStatus.CODEC_NOT_FOUND);
+        }
+        return magmaCodec;
     }
 
     public List<Device> viewConnectedDevice(String codecId) {

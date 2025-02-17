@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.support.*;
 import com.magma.dmsdata.util.ActuatorCode;
 import com.magma.dmsdata.util.Configuration;
-import com.magma.dmsdata.util.SensorCode;
+import com.magma.util.MagmaDateTimeDeserializer;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
@@ -29,7 +30,7 @@ public class Device {
     private String id;
 
     private String name;
-    private String group; // can be used to group devices
+    private String group;   //can be used to group devices
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String kitId;
@@ -39,7 +40,7 @@ public class Device {
 
     private Integer noOfSensors;
 
-    private SensorCode[] sensorCodes;
+    private String[] sensorCodes;
 
     @JsonIgnore
     private Map<Integer, Sensor> sensorMap = new HashMap<>();
@@ -81,17 +82,20 @@ public class Device {
     private Status status;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
+    @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
     private DateTime lastSeen;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
+    @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
     @CreatedDate
     private DateTime creationDate;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
+    @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
     @LastModifiedDate
     private DateTime modifiedDate;
 
-    private Integer batchNumber;
+    private String batchNumber;
 
     private ProductData product;
 
@@ -109,25 +113,30 @@ public class Device {
 
     private Map<String, String> metaData = null;
 
-    private String customPublishTopic;
-
-    private String customRemoteTopic;
-
     private UserInfo createdBy;
 
     private UserInfo modifiedBy;
 
-    // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION
-    // ----------------------------------------
+
+    // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION ----------------------------------------
     private String productType;
 
     private String temperatureUnit;
 
+    private String otaRequestTopic;
+
+    private String otaAckTopic;
+
+    private String remoteConfigTopic;
+
+    private String remoteConfigAckTopic;
+
+    private String referenceId;
+
     public Device() {
     }
 
-    public Device(String id, Integer interval, Integer noOfSensors, SensorCode[] sensorCodes, Integer noOfActuators,
-            ActuatorCode[] actuatorCodes) {
+    public Device(String id, Integer interval, Integer noOfSensors, String[] sensorCodes, Integer noOfActuators, ActuatorCode[] actuatorCodes) {
         this.id = id;
         this.interval = interval;
         this.noOfSensors = noOfSensors;
@@ -218,11 +227,11 @@ public class Device {
         this.noOfSensors = noOfSensors;
     }
 
-    public SensorCode[] getSensorCodes() {
+    public String[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(SensorCode[] sensorCodes) {
+    public void setSensorCodes(String[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -388,10 +397,8 @@ public class Device {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
         Device device = (Device) o;
 
@@ -399,11 +406,11 @@ public class Device {
 
     }
 
-    public Integer getBatchNumber() {
+    public String getBatchNumber() {
         return batchNumber;
     }
 
-    public void setBatchNumber(Integer batchNumber) {
+    public void setBatchNumber(String batchNumber) {
         this.batchNumber = batchNumber;
     }
 
@@ -460,22 +467,6 @@ public class Device {
         this.metaData = metaData;
     }
 
-    public String getCustomPublishTopic() {
-        return customPublishTopic;
-    }
-
-    public void setCustomPublishTopic(String customPublishTopic) {
-        this.customPublishTopic = customPublishTopic;
-    }
-
-    public String getCustomRemoteTopic() {
-        return customRemoteTopic;
-    }
-
-    public void setCustomRemoteTopic(String customRemoteTopic) {
-        this.customRemoteTopic = customRemoteTopic;
-    }
-
     public UserInfo getCreatedBy() {
         return createdBy;
     }
@@ -508,6 +499,46 @@ public class Device {
         this.temperatureUnit = temperatureUnit;
     }
 
+    public String getOtaRequestTopic() {
+        return otaRequestTopic;
+    }
+
+    public void setOtaRequestTopic(String otaRequestTopic) {
+        this.otaRequestTopic = otaRequestTopic;
+    }
+
+    public String getOtaAckTopic() {
+        return otaAckTopic;
+    }
+
+    public void setOtaAckTopic(String otaAckTopic) {
+        this.otaAckTopic = otaAckTopic;
+    }
+
+    public String getRemoteConfigTopic() {
+        return remoteConfigTopic;
+    }
+
+    public void setRemoteConfigTopic(String remoteConfigTopic) {
+        this.remoteConfigTopic = remoteConfigTopic;
+    }
+
+    public String getRemoteConfigAckTopic() {
+        return remoteConfigAckTopic;
+    }
+
+    public void setRemoteConfigAckTopic(String remoteConfigAckTopic) {
+        this.remoteConfigAckTopic = remoteConfigAckTopic;
+    }
+
+    public String getReferenceId() {
+        return referenceId;
+    }
+
+    public void setReferenceId(String referenceId) {
+        this.referenceId = referenceId;
+    }
+
     @Override
     public String toString() {
         return "Device{" +
@@ -538,7 +569,7 @@ public class Device {
                 ", lastSeen=" + lastSeen +
                 ", creationDate=" + creationDate +
                 ", modifiedDate=" + modifiedDate +
-                ", batchNumber=" + batchNumber +
+                ", batchNumber='" + batchNumber + '\'' +
                 ", product=" + product +
                 ", deviceParameterConfiguration=" + deviceParameterConfiguration +
                 ", references=" + references +
@@ -547,12 +578,15 @@ public class Device {
                 ", lastRawData='" + lastRawData + '\'' +
                 ", referenceName='" + referenceName + '\'' +
                 ", metaData=" + metaData +
-                ", customPublishTopic='" + customPublishTopic + '\'' +
-                ", customRemoteTopic='" + customRemoteTopic + '\'' +
                 ", createdBy=" + createdBy +
                 ", modifiedBy=" + modifiedBy +
                 ", productType='" + productType + '\'' +
                 ", temperatureUnit='" + temperatureUnit + '\'' +
+                ", otaRequestTopic='" + otaRequestTopic + '\'' +
+                ", otaAckTopic='" + otaAckTopic + '\'' +
+                ", remoteConfigTopic='" + remoteConfigTopic + '\'' +
+                ", remoteConfigAckTopic='" + remoteConfigAckTopic + '\'' +
+                ", referenceId='" + referenceId + '\'' +
                 '}';
     }
 }

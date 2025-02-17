@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ProductDataRepository extends MongoRepository<ProductData, String> {
-    void delete(ProductData product);
 }

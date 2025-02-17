@@ -18,7 +18,16 @@ public interface DeviceRepository extends MongoRepository<Device, String> {
 
     List<Device> findByIdNotIn(List<String> ids);
 
-    List<Device> findByBatchNumber(Integer batchNumber);
+    List<Device> findByBatchNumber(String batchNumber);
+
+    List<Device> findByBatchNumberAndReferenceId(String batchNumber, String referenceId);
+
+    Device findByIdAndReferenceId(String deviceId, String referenceId);
+
+    List<Device> findByName(String name);
+
+    @Query("{$or: [{'id': ?0}, {'name': ?0}]}")
+    Device findByIdOrName(String deviceIdOrName);
 
     List<Device> findByMagmaCodecId(String codecId);
 
@@ -31,9 +40,11 @@ public interface DeviceRepository extends MongoRepository<Device, String> {
 
     List<Device> findByProductProductId(String productId);
 
-    @Query("{ $or: [ {'customPublishTopic': ?0}, {'customRemoteTopic': ?0} ] }")
-    Device findByCustomPublishTopicOrCustomRemoteTopic(String topic);
-
     List<Device> findByProductType(String productType);
 
+    List<Device> findByReferenceId(String referenceId);
+
+    List<Device> findByIdInAndReferenceId(List<String> deviceIds, String referenceId);
+
+    List<Device> findByBatchNumberInAndReferenceId(List<String> batchNumber, String referenceId);
 }

@@ -9,19 +9,5 @@ import java.util.List;
 
 @Repository
 public interface KitRepository extends MongoRepository<Kit, String> {
-
-    List<Kit> findByIdIn(List<String> ids);
-
-    List<Kit> findByIdInAndOfflineIsTrue(List<String> ids);
-
-    List<Kit> findByIdInAndOfflineIsFalse(List<String> ids);
-
-    List<Kit> findByIdInAndOfflineIsTrueAndPersistenceIsTrue(List<String> ids);
-
-    List<Kit> findByModelIn(List<KitModel> models);
-
-    List<Kit> findByPersistenceIsTrue();
-
     Kit findByDevices(String deviceId);
-
 }

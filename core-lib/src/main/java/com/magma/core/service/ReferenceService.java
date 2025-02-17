@@ -3,13 +3,11 @@ package com.magma.core.service;
 
 import com.magma.dmsdata.data.entity.*;
 import com.magma.core.data.repository.AlertLimitRepository;
-import com.magma.core.data.repository.KitRepository;
 import com.magma.core.data.repository.UserFavouriteRepository;
 import com.magma.dmsdata.data.support.CorporateDeviceSummary;
 import com.magma.dmsdata.data.support.CorporateSensorSummary;
 import com.magma.dmsdata.util.MagmaException;
 import com.magma.dmsdata.util.MagmaStatus;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaTime;
 import com.magma.util.Status;
 import org.joda.time.DateTime;
@@ -31,9 +29,6 @@ public class ReferenceService {
     CorporateConnectorService corporateConnectorService;
 
     @Autowired
-    KitRepository kitRepository;
-
-    @Autowired
     UserFavouriteRepository userFavouriteRepository;
 
     @Autowired
@@ -45,10 +40,6 @@ public class ReferenceService {
         List<String> deviceIdsForQuery = new ArrayList<>();
         List<String> deviceIdsInCorporate = new ArrayList<>();
         String summaryType;
-        List<Kit> kitsForCorporate = corporateConnectorService.findKitsInCorporate(corporateId);
-        for (Kit kit : kitsForCorporate) {
-            deviceIdsInCorporate.addAll(kit.getDevices());
-        }
 
         if (!favouriteFilter) {
             deviceIdsForQuery = deviceIdsInCorporate;
@@ -137,9 +128,7 @@ public class ReferenceService {
         CorporateSensorSummary sensorSummaryOutput = new CorporateSensorSummary(corporateId);
         sensorSummaryOutput.getCorporateName();
 
-        List<Kit> KitsInCorporate = corporateConnectorService.findKitsInCorporate(corporateId);
-
-        List<SensorCode> sensorCodesInCorporate = new ArrayList<>();
+        List<String> sensorCodesInCorporate = new ArrayList<>();
         List<String> sensorNamesInCorporate = new ArrayList<>();
 
         Integer totalNumberOfSensorsInCorporate = 0;
@@ -147,123 +136,123 @@ public class ReferenceService {
         Map<String, Map<String, Integer>> nonPropertySensorSummaryMap = new HashMap<>();
         Map<String, Map<String, List<Device>>> propertySensorSummaryDeviceMap = new HashMap<>();
 
-        for (Kit kit : KitsInCorporate) {
-            List<String> deviceIdsOfKit = new ArrayList<>();
-            deviceIdsOfKit.addAll(kit.getDevices());
-            List<AlertLimit> alertLimitsForKit = alertLimitRepository.findByKitId(kit.getId());
-            totalNumberOfSensorsInCorporate += kit.getModel().getNoOfSensors();
-            Map<SensorCode, Integer> inActiveSensorsOfKit = new HashMap<>();
-            Map<SensorCode, Integer> wrongValuedSensorsOfKit = new HashMap<>();
-            Map<SensorCode, Integer> failureSensorsOfKit = new HashMap<>();
-            List<SensorCode> allSensorCodesOfKit = Arrays.asList(kit.getModel().getSensors());
-            List<SensorCode> allPropertyCodesOfKit = Arrays.asList(kit.getModel().getProperties());
-            List<SensorCode> allNonPropertyCodesOfKit = new ArrayList<>();
-
-            //Get devices Of Kit
-            Query kitDevicesQuery = new Query(Criteria.where("_id").in(deviceIdsOfKit));
-            List<Device> allDevicesInKit = mongoTemplate.find(kitDevicesQuery, Device.class);
-
-            //Divide sensor code into Property code and non-Property Code
-            for (SensorCode code : allSensorCodesOfKit) {
-                if (!allPropertyCodesOfKit.contains(code)) {
-                    allNonPropertyCodesOfKit.add(code);
-                }
-                if (code.equals(SensorCode.B)) {
-                    allNonPropertyCodesOfKit.add(code);
-                }
-            }
-
-            //Prepare Property sensor Map && property sensor Device Map
-            for (SensorCode psCode : allPropertyCodesOfKit) {
-                if (!sensorCodesInCorporate.contains(psCode)) {
-                    sensorCodesInCorporate.add(psCode);
-                    sensorNamesInCorporate.add(psCode.value());
-                }
-                propertySensorSummaryMap.putIfAbsent(psCode.value(), new HashMap<>());
-                propertySensorSummaryDeviceMap.putIfAbsent(psCode.value(), new HashMap<>()); //To store devices list
-                Map<String, Integer> propertySensorSpecificMap = propertySensorSummaryMap.get(psCode.value());
-                Map<String, List<Device>> propertySensorSpecificDeviceMap = propertySensorSummaryDeviceMap.get(psCode.value());
-                propertySensorSpecificMap.putIfAbsent("total sensors", 0);
-                propertySensorSpecificMap.putIfAbsent("active sensors", 0);
-                propertySensorSpecificMap.putIfAbsent("inactive sensors", 0);
-                propertySensorSpecificMap.putIfAbsent("sensor failure", 0);
-                propertySensorSpecificMap.putIfAbsent("wrong valued sensors", 0);
-                //Prepare Device Map
-                propertySensorSpecificDeviceMap.putIfAbsent("active sensors devices", new ArrayList<>());
-                propertySensorSpecificDeviceMap.putIfAbsent("sensor failure devices", new ArrayList<>());
-                propertySensorSpecificDeviceMap.putIfAbsent("wrong valued sensors devices", new ArrayList<>());
-            }
-
-            //Prepare Non-Property sensor Map
-            for (SensorCode npsCode : allNonPropertyCodesOfKit) {
-                if (!sensorCodesInCorporate.contains(npsCode)) {
-                    sensorCodesInCorporate.add(npsCode);
-                    sensorNamesInCorporate.add(npsCode.value());
-                }
-                nonPropertySensorSummaryMap.putIfAbsent(npsCode.value(), new HashMap<>());
-            }
-
-            // Process Available Properties to Generate sensor Counts
-            for (Property property : kit.getProperties()) {
-                if (allPropertyCodesOfKit.contains(property.getCode())) {
-                    inActiveSensorsOfKit.putIfAbsent(property.getCode(), 0);
-                    wrongValuedSensorsOfKit.putIfAbsent(property.getCode(), 0);
-                    failureSensorsOfKit.putIfAbsent(property.getCode(), 0);
-                    Map<String, Integer> propertySensorSpecificMap = propertySensorSummaryMap.get(property.getCode().value());
-
-                    if (property.getTime() != null && kit.getInterval() != null && !property.getTime().isBefore(dateTimeNow.minusMinutes(kit.getInterval()))) {
-                        propertySensorSpecificMap.replace("active sensors", propertySensorSpecificMap.get("active sensors") + 1);
-                        propertySensorSpecificMap.replace("total sensors", propertySensorSpecificMap.get("total sensors") + 1);
-                    } else {
-                        propertySensorSpecificMap.replace("inactive sensors", propertySensorSpecificMap.get("inactive sensors") + 1);
-                        propertySensorSpecificMap.replace("total sensors", propertySensorSpecificMap.get("total sensors") + 1);
-                        inActiveSensorsOfKit.replace(property.getCode(), inActiveSensorsOfKit.get(property.getCode()) + 1);
-                    }
-                    if (property.getError() != null && property.getError()) {
-                        propertySensorSpecificMap.replace("sensor failure", propertySensorSpecificMap.get("sensor failure") + 1);
-                        failureSensorsOfKit.replace(property.getCode(), failureSensorsOfKit.get(property.getCode()) + 1);
-                    }
-                    List<AlertLimit> alertLimitForProperty = alertLimitsForKit.stream().filter(alertLimit -> alertLimit.getCode() == property.getCode()).collect(Collectors.toList());
-                    if (!alertLimitForProperty.isEmpty() && (property.getValue() < alertLimitForProperty.get(0).getLow() || property.getValue() > alertLimitForProperty.get(0).getHigh())) {
-                        propertySensorSpecificMap.replace("wrong valued sensors", propertySensorSpecificMap.get("wrong valued sensors") + 1);
-                        wrongValuedSensorsOfKit.replace(property.getCode(), wrongValuedSensorsOfKit.get(property.getCode()) + 1);
-                    }
-                }
-            }
-            //Generate Devices Map
-            for (SensorCode psCode : allPropertyCodesOfKit) {
-                Map<String, List<Device>> propertySensorSpecificDevicesMap = propertySensorSummaryDeviceMap.get(psCode.value());
-                if (inActiveSensorsOfKit.get(psCode) != null && inActiveSensorsOfKit.get(psCode) == 0) {
-                    propertySensorSpecificDevicesMap.get("active sensors devices").addAll(allDevicesInKit);
-                }
-                if (wrongValuedSensorsOfKit.get(psCode) != null && wrongValuedSensorsOfKit.get(psCode) != 0) {
-                    propertySensorSpecificDevicesMap.get("wrong valued sensors devices").addAll(allDevicesInKit);
-                }
-                if (failureSensorsOfKit.get(psCode) != null && failureSensorsOfKit.get(psCode) != 0) {
-                    propertySensorSpecificDevicesMap.get("sensor failure devices").addAll(allDevicesInKit);
-                }
-            }
-            //Process Non-Property Sensors through devices
-            for (Device device : allDevicesInKit) {
-                List<Sensor> allSensorsReadingsOfDevice = device.getSensors(); // available Sensor Readings of device
-                List<Sensor> nonPropertySensorReadingsOfDevice = allSensorsReadingsOfDevice.stream().filter(sensor -> allNonPropertyCodesOfKit.contains(sensor.getCode())).collect(Collectors.toList());
-
-                for (Sensor nonPropertySensor : nonPropertySensorReadingsOfDevice) {
-                    Map<String, Integer> nonPropertySensorSpecificMap = nonPropertySensorSummaryMap.get(nonPropertySensor.getCode().value());
-                    nonPropertySensorSpecificMap.putIfAbsent("total sensors", 0);
-                    nonPropertySensorSpecificMap.putIfAbsent("active sensors", 0);
-                    nonPropertySensorSpecificMap.putIfAbsent("inactive sensors", 0);
-
-                    if (nonPropertySensor.getTime() != null && device.getInterval() != null && !nonPropertySensor.getTime().isBefore(dateTimeNow.minusMinutes(device.getInterval()))) {
-                        nonPropertySensorSpecificMap.replace("active sensors", nonPropertySensorSpecificMap.get("active sensors") + 1);
-                        nonPropertySensorSpecificMap.replace("total sensors", nonPropertySensorSpecificMap.get("total sensors") + 1);
-                    } else {
-                        nonPropertySensorSpecificMap.replace("inactive sensors", nonPropertySensorSpecificMap.get("inactive sensors") + 1);
-                        nonPropertySensorSpecificMap.replace("total sensors", nonPropertySensorSpecificMap.get("total sensors") + 1);
-                    }
-                }
-            }
-        }
+//        for (Kit kit : KitsInCorporate) {
+//            List<String> deviceIdsOfKit = new ArrayList<>();
+//            deviceIdsOfKit.addAll(kit.getDevices());
+//            List<AlertLimit> alertLimitsForKit = alertLimitRepository.findByKitId(kit.getId());
+//            totalNumberOfSensorsInCorporate += kit.getModel().getNoOfSensors();
+//            Map<String, Integer> inActiveSensorsOfKit = new HashMap<>();
+//            Map<String, Integer> wrongValuedSensorsOfKit = new HashMap<>();
+//            Map<String, Integer> failureSensorsOfKit = new HashMap<>();
+////            List<String> allSensorCodesOfKit = Arrays.asList(kit.getModel().getSensors());
+////            List<String> allPropertyCodesOfKit = Arrays.asList(kit.getModel().getProperties());
+//            List<String> allNonPropertyCodesOfKit = new ArrayList<>();
+//
+//            //Get devices Of Kit
+//            Query kitDevicesQuery = new Query(Criteria.where("_id").in(deviceIdsOfKit));
+//            List<Device> allDevicesInKit = mongoTemplate.find(kitDevicesQuery, Device.class);
+//
+//            //Divide sensor code into Property code and non-Property Code
+//            for (String code : allSensorCodesOfKit) {
+//                if (!allPropertyCodesOfKit.contains(code)) {
+//                    allNonPropertyCodesOfKit.add(code);
+//                }
+//                if (code.equals("B")) {
+//                    allNonPropertyCodesOfKit.add(code);
+//                }
+//            }
+//
+//            //Prepare Property sensor Map && property sensor Device Map
+//            for (String psCode : allPropertyCodesOfKit) {
+//                if (!sensorCodesInCorporate.contains(psCode)) {
+//                    sensorCodesInCorporate.add(psCode);
+//                    sensorNamesInCorporate.add(psCode);
+//                }
+//                propertySensorSummaryMap.putIfAbsent(psCode, new HashMap<>());
+//                propertySensorSummaryDeviceMap.putIfAbsent(psCode, new HashMap<>()); //To store devices list
+//                Map<String, Integer> propertySensorSpecificMap = propertySensorSummaryMap.get(psCode);
+//                Map<String, List<Device>> propertySensorSpecificDeviceMap = propertySensorSummaryDeviceMap.get(psCode);
+//                propertySensorSpecificMap.putIfAbsent("total sensors", 0);
+//                propertySensorSpecificMap.putIfAbsent("active sensors", 0);
+//                propertySensorSpecificMap.putIfAbsent("inactive sensors", 0);
+//                propertySensorSpecificMap.putIfAbsent("sensor failure", 0);
+//                propertySensorSpecificMap.putIfAbsent("wrong valued sensors", 0);
+//                //Prepare Device Map
+//                propertySensorSpecificDeviceMap.putIfAbsent("active sensors devices", new ArrayList<>());
+//                propertySensorSpecificDeviceMap.putIfAbsent("sensor failure devices", new ArrayList<>());
+//                propertySensorSpecificDeviceMap.putIfAbsent("wrong valued sensors devices", new ArrayList<>());
+//            }
+//
+//            //Prepare Non-Property sensor Map
+//            for (String npsCode : allNonPropertyCodesOfKit) {
+//                if (!sensorCodesInCorporate.contains(npsCode)) {
+//                    sensorCodesInCorporate.add(npsCode);
+//                    sensorNamesInCorporate.add(npsCode);
+//                }
+//                nonPropertySensorSummaryMap.putIfAbsent(npsCode, new HashMap<>());
+//            }
+//
+//            // Process Available Properties to Generate sensor Counts
+//            for (Property property : kit.getProperties()) {
+//                if (allPropertyCodesOfKit.contains(property.getCode())) {
+//                    inActiveSensorsOfKit.putIfAbsent(property.getCode(), 0);
+//                    wrongValuedSensorsOfKit.putIfAbsent(property.getCode(), 0);
+//                    failureSensorsOfKit.putIfAbsent(property.getCode(), 0);
+//                    Map<String, Integer> propertySensorSpecificMap = propertySensorSummaryMap.get(property.getCode());
+//
+//                    if (property.getTime() != null && kit.getInterval() != null && !property.getTime().isBefore(dateTimeNow.minusMinutes(kit.getInterval()))) {
+//                        propertySensorSpecificMap.replace("active sensors", propertySensorSpecificMap.get("active sensors") + 1);
+//                        propertySensorSpecificMap.replace("total sensors", propertySensorSpecificMap.get("total sensors") + 1);
+//                    } else {
+//                        propertySensorSpecificMap.replace("inactive sensors", propertySensorSpecificMap.get("inactive sensors") + 1);
+//                        propertySensorSpecificMap.replace("total sensors", propertySensorSpecificMap.get("total sensors") + 1);
+//                        inActiveSensorsOfKit.replace(property.getCode(), inActiveSensorsOfKit.get(property.getCode()) + 1);
+//                    }
+//                    if (property.getError() != null && property.getError()) {
+//                        propertySensorSpecificMap.replace("sensor failure", propertySensorSpecificMap.get("sensor failure") + 1);
+//                        failureSensorsOfKit.replace(property.getCode(), failureSensorsOfKit.get(property.getCode()) + 1);
+//                    }
+//                    List<AlertLimit> alertLimitForProperty = alertLimitsForKit.stream().filter(alertLimit -> alertLimit.getCode() == property.getCode()).collect(Collectors.toList());
+//                    if (!alertLimitForProperty.isEmpty() && (property.getValue() < alertLimitForProperty.get(0).getLow() || property.getValue() > alertLimitForProperty.get(0).getHigh())) {
+//                        propertySensorSpecificMap.replace("wrong valued sensors", propertySensorSpecificMap.get("wrong valued sensors") + 1);
+//                        wrongValuedSensorsOfKit.replace(property.getCode(), wrongValuedSensorsOfKit.get(property.getCode()) + 1);
+//                    }
+//                }
+//            }
+//            //Generate Devices Map
+//            for (String psCode : allPropertyCodesOfKit) {
+//                Map<String, List<Device>> propertySensorSpecificDevicesMap = propertySensorSummaryDeviceMap.get(psCode);
+//                if (inActiveSensorsOfKit.get(psCode) != null && inActiveSensorsOfKit.get(psCode) == 0) {
+//                    propertySensorSpecificDevicesMap.get("active sensors devices").addAll(allDevicesInKit);
+//                }
+//                if (wrongValuedSensorsOfKit.get(psCode) != null && wrongValuedSensorsOfKit.get(psCode) != 0) {
+//                    propertySensorSpecificDevicesMap.get("wrong valued sensors devices").addAll(allDevicesInKit);
+//                }
+//                if (failureSensorsOfKit.get(psCode) != null && failureSensorsOfKit.get(psCode) != 0) {
+//                    propertySensorSpecificDevicesMap.get("sensor failure devices").addAll(allDevicesInKit);
+//                }
+//            }
+//            //Process Non-Property Sensors through devices
+//            for (Device device : allDevicesInKit) {
+//                List<Sensor> allSensorsReadingsOfDevice = device.getSensors(); // available Sensor Readings of device
+//                List<Sensor> nonPropertySensorReadingsOfDevice = allSensorsReadingsOfDevice.stream().filter(sensor -> allNonPropertyCodesOfKit.contains(sensor.getCode())).collect(Collectors.toList());
+//
+//                for (Sensor nonPropertySensor : nonPropertySensorReadingsOfDevice) {
+//                    Map<String, Integer> nonPropertySensorSpecificMap = nonPropertySensorSummaryMap.get(nonPropertySensor.getCode());
+//                    nonPropertySensorSpecificMap.putIfAbsent("total sensors", 0);
+//                    nonPropertySensorSpecificMap.putIfAbsent("active sensors", 0);
+//                    nonPropertySensorSpecificMap.putIfAbsent("inactive sensors", 0);
+//
+//                    if (nonPropertySensor.getTime() != null && device.getInterval() != null && !nonPropertySensor.getTime().isBefore(dateTimeNow.minusMinutes(device.getInterval()))) {
+//                        nonPropertySensorSpecificMap.replace("active sensors", nonPropertySensorSpecificMap.get("active sensors") + 1);
+//                        nonPropertySensorSpecificMap.replace("total sensors", nonPropertySensorSpecificMap.get("total sensors") + 1);
+//                    } else {
+//                        nonPropertySensorSpecificMap.replace("inactive sensors", nonPropertySensorSpecificMap.get("inactive sensors") + 1);
+//                        nonPropertySensorSpecificMap.replace("total sensors", nonPropertySensorSpecificMap.get("total sensors") + 1);
+//                    }
+//                }
+//            }
+//        }
         //Filtering Non PropertySensors that behaved as property sensor in some Kits
         propertySensorSummaryMap.remove("Battery");
 
@@ -287,10 +276,6 @@ public class ReferenceService {
         corporateConnectorService.validateCorporate(corporateId);
         List<String> deviceIdsForQuery = new ArrayList<>();
         List<String> deviceIdsInCorporate = new ArrayList<>();
-        List<Kit> kitsForCorporate = corporateConnectorService.findKitsInCorporate(corporateId);
-        for (Kit kit : kitsForCorporate) {
-            deviceIdsInCorporate.addAll(kit.getDevices());
-        }
         if (favouriteFilter == null || !favouriteFilter) {
             deviceIdsForQuery = deviceIdsInCorporate;
         } else {
@@ -373,18 +358,18 @@ public class ReferenceService {
                         }
                     } else {
                         List<String> deviceIdsWithSensorFailure = new ArrayList<>();
-                        for (Kit kit : kitsForCorporate) {
-                            for (Property property : kit.getProperties()) {
-                                if (property.getError() != null && property.getError()) {
-                                    for (String deviceId : kit.getDevices()) {
-                                        if (!deviceIdsWithSensorFailure.contains(deviceId)) {
-                                            deviceIdsWithSensorFailure.add(deviceId);
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
+//                        for (Kit kit : kitsForCorporate) {
+//                            for (Property property : kit.getProperties()) {
+//                                if (property.getError() != null && property.getError()) {
+//                                    for (String deviceId : kit.getDevices()) {
+//                                        if (!deviceIdsWithSensorFailure.contains(deviceId)) {
+//                                            deviceIdsWithSensorFailure.add(deviceId);
+//                                        }
+//                                    }
+//                                    break;
+//                                }
+//                            }
+//                        }
                         List<String> favouriteFilteredDeviceIdsInCorporate = deviceIdsForQuery;
                         deviceIdsForQuery = deviceIdsWithSensorFailure.stream().filter(deviceId -> favouriteFilteredDeviceIdsInCorporate.contains(deviceId)).collect(Collectors.toList());
                         Query devicesWithSensorFailureQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
@@ -402,18 +387,18 @@ public class ReferenceService {
                         }
                     } else {
                         List<String> deviceIdsWithAlerts = new ArrayList<>();
-                        for (Kit kit : kitsForCorporate) {
-                            for (Property property : kit.getProperties()) {
-                                if (property.getAlert() != null && property.getAlert()) {
-                                    for (String deviceId : kit.getDevices()) {
-                                        if (!deviceIdsWithAlerts.contains(deviceId)) {
-                                            deviceIdsWithAlerts.add(deviceId);
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
+//                        for (Kit kit : kitsForCorporate) {
+//                            for (Property property : kit.getProperties()) {
+//                                if (property.getAlert() != null && property.getAlert()) {
+//                                    for (String deviceId : kit.getDevices()) {
+//                                        if (!deviceIdsWithAlerts.contains(deviceId)) {
+//                                            deviceIdsWithAlerts.add(deviceId);
+//                                        }
+//                                    }
+//                                    break;
+//                                }
+//                            }
+//                        }
                         List<String> favouriteFilteredDeviceIdsInCorporate = deviceIdsForQuery;
                         deviceIdsForQuery = deviceIdsWithAlerts.stream().filter(deviceId -> favouriteFilteredDeviceIdsInCorporate.contains(deviceId)).collect(Collectors.toList());
                         Query devicesWithSensorFailureQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
@@ -431,18 +416,18 @@ public class ReferenceService {
                         }
                     } else {
                         List<String> deviceIdsWithInActiveSensors = new ArrayList<>();
-                        for (Kit kit : kitsForCorporate) {
-                            for (Property property : kit.getProperties()) {
-                                if (property.getTime().isBefore(dateTimeNow.minusMinutes(kit.getInterval()))) {
-                                    for (String deviceId : kit.getDevices()) {
-                                        if (!deviceIdsWithInActiveSensors.contains(deviceId)) {
-                                            deviceIdsWithInActiveSensors.add(deviceId);
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
+//                        for (Kit kit : kitsForCorporate) {
+//                            for (Property property : kit.getProperties()) {
+//                                if (property.getTime().isBefore(dateTimeNow.minusMinutes(kit.getInterval()))) {
+//                                    for (String deviceId : kit.getDevices()) {
+//                                        if (!deviceIdsWithInActiveSensors.contains(deviceId)) {
+//                                            deviceIdsWithInActiveSensors.add(deviceId);
+//                                        }
+//                                    }
+//                                    break;
+//                                }
+//                            }
+//                        }
                         List<String> favouriteFilteredDeviceIdsInCorporate = deviceIdsForQuery;
                         deviceIdsForQuery = favouriteFilteredDeviceIdsInCorporate.stream().filter(deviceId -> !deviceIdsWithInActiveSensors.contains(deviceId)).collect(Collectors.toList());
                         Query devicesWithSensorFailureQuery = new Query(Criteria.where("_id").in(deviceIdsForQuery));
@@ -466,14 +451,14 @@ public class ReferenceService {
         }
 
         // TODO need to modify
-        outputDevicesList.forEach((d) -> {
-
-            Kit kit = kitRepository.findByDevices(d.getId());
-            if (kit != null) {
-                d.setReferenceName(corporateConnectorService.referenceName(kit.getId()));
-            }
-
-        });
+//        outputDevicesList.forEach((d) -> {
+//
+//            Kit kit = kitRepository.findByDevices(d.getId());
+//            if (kit != null) {
+//                d.setReferenceName(corporateConnectorService.referenceName(kit.getId()));
+//            }
+//
+//        });
         return outputDevicesList;
     }
 }

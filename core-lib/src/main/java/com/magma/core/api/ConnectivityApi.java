@@ -6,7 +6,7 @@ import com.magma.dmsdata.data.entity.Vmq_acl_auth;
 import com.magma.core.service.HttpService;
 import com.magma.core.service.MagmaCodecService;
 import com.magma.core.service.VerneMqService;
-import com.magma.util.BadRequestException;
+import com.magma.dmsdata.validation.BadRequestException;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
@@ -39,8 +39,17 @@ public class ConnectivityApi {
         return new MagmaResponse<>(verneMqService.findAll());
     }
 
+    @RequestMapping(value = "/core/vernemq-acl/{vernemqId}", method = RequestMethod.GET)
+    public MagmaResponse<Vmq_acl_auth> getVmqAclOneClient(@PathVariable("vernemqId") String vernemqId) {
+        return new MagmaResponse<>(verneMqService.getVmqAclOneClient(vernemqId));
+    }
+
     @RequestMapping(value = "/core/vernemq-acl", method = RequestMethod.POST)
-    public MagmaResponse<Vmq_acl_auth> createVmqAcl(@RequestBody Vmq_acl_auth vmqAclAuth) {
+    public MagmaResponse<Vmq_acl_auth> createVmqAcl(@RequestBody @Valid Vmq_acl_auth vmqAclAuth,
+                                                    BindingResult result) {
+        if(result.hasErrors()){
+            throw new BadRequestException(result.getAllErrors());
+        }
         return new MagmaResponse<>(verneMqService.createVmqAclAuth(vmqAclAuth));
     }
 
@@ -57,9 +66,28 @@ public class ConnectivityApi {
         return new MagmaResponse<>("Vernemq-aclID deleted successfully");
     }
 
+    @RequestMapping(value = "/core/connectivity/mqtt-status/{client_id}", method = RequestMethod.PUT)
+    public MagmaResponse<Vmq_acl_auth> updateActionKey(@PathVariable String client_id,
+                                                       @RequestParam boolean status) {
+        Vmq_acl_auth vmqAclAuth = verneMqService.updateActionKey(client_id, status);
+        return new MagmaResponse<>(vmqAclAuth);
+    }
+
+    @RequestMapping(value = "/core/connectivity/mqtt-protect/{clientId}", method = RequestMethod.PUT)
+    public MagmaResponse<Vmq_acl_auth> updateMqttProtection(@PathVariable String clientId,
+                                                            @RequestParam boolean isProtect) {
+        Vmq_acl_auth vmq_acl_auth = verneMqService.updateMqttProtection(clientId, isProtect);
+        return new MagmaResponse<>(vmq_acl_auth);
+    }
+
     @RequestMapping(value = "/core/http-acl", method = RequestMethod.GET)
     public MagmaResponse<List<Http_acl_auth>> getAllHttpAcl() {
         return new MagmaResponse<>(httpService.findAll());
+    }
+
+    @RequestMapping(value = "/core/http-acl/{http-acl}", method = RequestMethod.GET)
+    public MagmaResponse< Http_acl_auth> getOneClient(@PathVariable("http-acl") String httpAclId) {
+        return new MagmaResponse<>(httpService.getOneClient(httpAclId));
     }
 
     @RequestMapping(value = "/core/http-acl", method = RequestMethod.POST)
@@ -90,5 +118,19 @@ public class ConnectivityApi {
     public MagmaResponse<Object> getAccessToken(@PathVariable("http-acl") String httpAclId) {
         return new MagmaResponse<>(httpService.getAccessToken(httpAclId));
     }
+
+    @RequestMapping(value = "/core/connectivity/httpclient-status/{http-acl}", method = RequestMethod.PUT)
+    public MagmaResponse<Http_acl_auth> updateActionKeyHttp(@PathVariable("http-acl") String httpAclId,
+                                                            @RequestParam boolean status) {
+        Http_acl_auth httAcl_auth = httpService.updateActionKeyHttp(httpAclId, status);
+        return new MagmaResponse<>(httAcl_auth);
+    }
+
+    @RequestMapping(value = "/core/connectivity/http-protect/{clientId}", method = RequestMethod.PUT)
+    public MagmaResponse<Http_acl_auth> updateHttpProtection(@PathVariable String clientId, @RequestParam boolean isProtect) {
+        Http_acl_auth http_acl_auth = httpService.updateProtection(clientId, isProtect);
+        return new MagmaResponse<>(http_acl_auth);
+    }
+
 
 }

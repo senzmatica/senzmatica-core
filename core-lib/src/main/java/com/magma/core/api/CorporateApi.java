@@ -25,8 +25,7 @@ public class CorporateApi {
     }
 
     @RequestMapping(value = "/user/{user}/corporate/{corporate}/sensorSummary", method = RequestMethod.GET)
-    public MagmaResponse<CorporateSensorSummary> getCorporateAlerts(@PathVariable("corporate") String corporateId,
-                                                                    @PathVariable("user") String userId) {
+    public MagmaResponse<CorporateSensorSummary> getCorporateAlerts(@PathVariable("corporate") String corporateId) {
         return new MagmaResponse<>(corporateService.getCorporateWiseSensorSummary(corporateId));
     }
 

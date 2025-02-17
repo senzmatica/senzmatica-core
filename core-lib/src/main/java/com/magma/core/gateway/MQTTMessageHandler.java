@@ -3,6 +3,9 @@ package com.magma.core.gateway;
 import com.magma.core.service.CoreService;
 import com.magma.core.service.DataProcessorService;
 import com.magma.core.service.ProductService;
+import com.magma.util.MagmaTime;
+import com.magma.util.RequestIdUtil;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,9 @@ public class MQTTMessageHandler implements MessageHandler {
 
     @Override
     public void handleMessage(Message<?> mqttMessage) {
+        if (RequestIdUtil.getRequestId() == null) {
+            RequestIdUtil.generateRequestId();
+        }
 
         try {
             String txt = mqttMessage.getPayload().toString(); //as updated with codec dynamic it should be Object type
@@ -48,62 +54,166 @@ public class MQTTMessageHandler implements MessageHandler {
             String[] elements = topic.split("/");
 
             String deviceId;
-            switch (elements[elements.length - 1]) {
-                case "A":
-                    //D2S/SA/V1/{Device_Id}/A
-                    deviceId = elements[elements.length - 2];
 
-                    //TODO:remove after keerthi fix topic
-                    if (txt.contains("*")) {
-                        String[] els = txt.split("\\*");
-                        txt = els[1];
-                        dataProcessorService.doHandle(deviceId, els[0]);
-                    }
-                    ////
+            if(elements[2].equals("V1")) {
+                switch (elements[elements.length - 1]) {
+                    case "A":
+                        //D2S/SA/V1/{Device_Id}/A
+                        deviceId = elements[elements.length - 2];
+                        DateTime time = MagmaTime.now();
 
-                    dataProcessorService.doHandleActuators(deviceId, txt);
-                    break;
-
-                case "S":
-                    //D2S/SA/V1/{Device_Id}/S
-                    deviceId = elements[elements.length - 2];
-                    dataProcessorService.doHandle(deviceId, txt);
-                    break;
-
-                case "C":
-                    //D2S/SA/V1/{Device_Id}/S
-                    deviceId = elements[elements.length - 2];
-                    dataProcessorService.doHandle(deviceId, txt);
-                    break;
-
-                case "events":
-                    //devices/{Device_Id}/messages/events
-                    deviceId = elements[1];
-                    dataProcessorService.doHandle(deviceId, txt);
-                    break;
-
-                default:
-                    if (elements[elements.length - 2].equals("C") && txt.contains("rm-conf-successful")) {
-                        deviceId = elements[elements.length - 3];
-                        String topicNumber = elements[elements.length - 1];
-                        coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);
-                    } else if (txt.contains("Bootloader operation successful")) {
-                        deviceId = elements[elements.length - 1];
-                        productService.doHandleProductVersionUpdates(deviceId);
-                    } else {
-                        deviceId = elements[elements.length - 1];
+                        //TODO:remove after keerthi fix topic
                         if (txt.contains("*")) {
                             String[] els = txt.split("\\*");
-                            txt = els[0];
-                            dataProcessorService.doHandleActuators(deviceId, els[1]);
+                            txt = els[1];
+                            dataProcessorService.doHandle(deviceId, els[0]);
+                            time = dataProcessorService.pastDataTime(els[0]);
                         }
+                        ////
+
+//                        dataProcessorService.doHandleActuators(deviceId, txt, time);
+                        break;
+
+                    case "S":
+                        //D2S/SA/V1/{Device_Id}/S
+                        deviceId = elements[elements.length - 2];
                         dataProcessorService.doHandle(deviceId, txt);
-                    }
+                        break;
+
+                    case "C":
+                        //D2S/SA/V1/{Device_Id}/S
+                        deviceId = elements[elements.length - 2];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    case "events":
+                        //devices/{Device_Id}/messages/events
+                        deviceId = elements[1];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    default:
+                        if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )&& (txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received"))) {
+                            deviceId = elements[elements.length - 3];
+                            String topicNumber = elements[elements.length - 1];
+                            coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);
+                        }
+                        else if(txt.contains("rm-conf-unsuccessful")||(txt.contains("rm-conf-partial-successful"))){
+                            deviceId = elements[elements.length - 3];
+                            String topicNumber = elements[elements.length - 1];
+                            coreService.doHandleDeviceConfigFailure(deviceId, topicNumber,txt);
+                        }
+                        else if (txt.contains("Bootloader operation successful") || txt.contains("FUOTA Operation Success")) {
+                            deviceId = elements[elements.length - 1];
+                            productService.doHandleProductVersionUpdates(deviceId,true);
+                        }
+                        else if (txt.contains("Bootloader operation failed") ) {
+                            deviceId = elements[elements.length - 1];
+                            productService.doHandleProductVersionUpdates(deviceId,false);
+                        }
+                        else {
+                            deviceId = elements[elements.length - 1];
+                            if (txt.contains("*")) {
+                                String[] els = txt.split("\\*");
+                                txt = els[0];
+//                                dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
+                            }
+                            dataProcessorService.doHandle(deviceId, txt);
+                        }
+                }
+            } else if(elements[2].equals("V2")) {
+                String nodeId;
+
+                switch (elements[elements.length - 1]) {
+                    case "S":
+                        //D2S/SA/V2/GW/{GateWay_Id}/S
+                        //D2S/SA/V2/GW/{GateWay_Id}/{Node_Id}/S
+                        deviceId = elements[elements.length - 2];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    case "E":
+                    case "W":
+                    default:
+                        deviceId = elements[elements.length - 2];
+                        if(txt.contains("[") && txt.contains("]"))
+                            dataProcessorService.doHandleJsonMessages(elements[4], txt);
+                        else
+                            dataProcessorService.doHandle(deviceId, txt);
+                }
+            }
+            else {
+                switch (elements[elements.length - 1]) {
+                    case "A":
+                        //D2S/SA/V1/{Device_Id}/A
+                        deviceId = elements[elements.length - 2];
+                        DateTime time = MagmaTime.now();
+
+                        //TODO:remove after keerthi fix topic
+                        if (txt.contains("*")) {
+                            String[] els = txt.split("\\*");
+                            txt = els[1];
+                            dataProcessorService.doHandle(deviceId, els[0]);
+                            time = dataProcessorService.pastDataTime(els[0]);
+                        }
+                        ////
+
+//                        dataProcessorService.doHandleActuators(deviceId, txt, time);
+                        break;
+
+                    case "S":
+                        //D2S/SA/V1/{Device_Id}/S
+                        deviceId = elements[elements.length - 2];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    case "C":
+                        //D2S/SA/V1/{Device_Id}/S
+                        deviceId = elements[elements.length - 2];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    case "events":
+                        //devices/{Device_Id}/messages/events
+                        deviceId = elements[1];
+                        dataProcessorService.doHandle(deviceId, txt);
+                        break;
+
+                    default:
+                        if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )){
+                            if(txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received")) {
+                                deviceId = elements[elements.length - 3];
+                                String topicNumber = elements[elements.length - 1];
+                                coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);}
+                            else if(txt.contains("rm-conf-unsuccessful")||(txt.contains("rm-conf-partial-successful"))){
+                                deviceId = elements[elements.length - 3];
+                                String topicNumber = elements[elements.length - 1];
+                                coreService.doHandleDeviceConfigFailure(deviceId, topicNumber,txt);
+                            }
+                        }
+                        else if (txt.contains("Bootloader operation successful") || txt.contains("FUOTA Operation Success")) {
+                            deviceId = elements[elements.length - 1];
+                            productService.doHandleProductVersionUpdates(deviceId,true);
+                        }
+                        else if (txt.contains("Bootloader operation failed") ) {
+                            deviceId = elements[elements.length - 1];
+                            productService.doHandleProductVersionUpdates(deviceId,false);
+                        } else {
+                            deviceId = elements[elements.length - 1];
+                            if (txt.contains("*")) {
+                                String[] els = txt.split("\\*");
+                                txt = els[0];
+//                                dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
+                            }
+                            dataProcessorService.doHandle(deviceId, txt);
+                        }
+                }
             }
 
         } catch (Exception e) {
-            LOGGER.error("Exception Got in MQTT :", e);
+            e.printStackTrace(); //adding this so that we can get more detailed error
 
+            LOGGER.error("Exception Got in MQTT :", e);
         }
     }
 

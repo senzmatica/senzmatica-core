@@ -1,14 +1,15 @@
 package com.magma.dmsdata.data.dto;
 
 import com.magma.dmsdata.data.support.Connectivity;
+import com.magma.dmsdata.data.support.ProductVersion;
 import com.magma.dmsdata.data.support.Protocol;
 import com.magma.dmsdata.util.ActuatorCode;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaUtil;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Id;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProductTypeDTO {
@@ -19,18 +20,23 @@ public class ProductTypeDTO {
     @NotNull(message = "Product Name can't be null")
     private String productName;
 
-    private SensorCode[] sensorCodes;
+    private String[] sensorCodes;
     private ActuatorCode[] actuatorCodes;
 
-    private boolean persistence;
+    @NotNull(message = "Persistence can't be null or empty")
+    private Boolean persistence;
 
-    @NotNull(message = "Protocol can't be null")
+    @NotNull(message = "Protocol can't be null or empty")
     private Protocol protocol;
 
-    @NotNull(message = "Connectivity can't be null")
+    @NotNull(message = "Connectivity can't be null or empty")
     private Connectivity connectivity;
     private String codecName;
     private boolean transcoder;
+    private boolean otaUpgradable;
+    private boolean remotelyConfigurable;
+    private List<ProductVersion> versions = new ArrayList<>();
+    private String dataFormat;
 
     public boolean validate() {
         return MagmaUtil.validate(id)
@@ -39,7 +45,9 @@ public class ProductTypeDTO {
                 && actuatorCodes != null
                 && (sensorCodes.length != 0 || actuatorCodes.length != 0)
                 && connectivity != null
-                && protocol != null;
+                && protocol != null
+                && ((!otaUpgradable && !remotelyConfigurable) || (dataFormat != null))
+                && (!remotelyConfigurable || (versions.size() >= 1));
     }
 
     public boolean addValidate() {
@@ -48,7 +56,18 @@ public class ProductTypeDTO {
                 && actuatorCodes != null
                 && (sensorCodes.length != 0 || actuatorCodes.length != 0)
                 && connectivity != null
-                && protocol != null;
+                && protocol != null
+                && ((!otaUpgradable && !remotelyConfigurable) || (dataFormat != null))
+                && (!remotelyConfigurable || (versions.size() == 1));
+    }
+
+
+    public List<ProductVersion> getVersions() {
+        return versions;
+    }
+
+    public void setVersions(List<ProductVersion> versions) {
+        this.versions = versions;
     }
 
     public String getId() {
@@ -67,11 +86,11 @@ public class ProductTypeDTO {
         this.productName = productName;
     }
 
-    public SensorCode[] getSensorCodes() {
+    public String[] getSensorCodes() {
         return sensorCodes;
     }
 
-    public void setSensorCodes(SensorCode[] sensorCodes) {
+    public void setSensorCodes(String[] sensorCodes) {
         this.sensorCodes = sensorCodes;
     }
 
@@ -83,11 +102,11 @@ public class ProductTypeDTO {
         this.actuatorCodes = actuatorCodes;
     }
 
-    public boolean isPersistence() {
+    public Boolean isPersistence() {
         return persistence;
     }
 
-    public void setPersistence(boolean persistence) {
+    public void setPersistence(Boolean persistence) {
         this.persistence = persistence;
     }
 
@@ -121,5 +140,29 @@ public class ProductTypeDTO {
 
     public void setTranscoder(boolean transcoder) {
         this.transcoder = transcoder;
+    }
+
+    public boolean isOtaUpgradable() {
+        return otaUpgradable;
+    }
+
+    public void setOtaUpgradable(boolean otaUpgradable) {
+        this.otaUpgradable = otaUpgradable;
+    }
+
+    public boolean isRemotelyConfigurable() {
+        return remotelyConfigurable;
+    }
+
+    public void setRemotelyConfigurable(boolean remotelyConfigurable) {
+        this.remotelyConfigurable = remotelyConfigurable;
+    }
+
+    public String getDataFormat() {
+        return dataFormat;
+    }
+
+    public void setDataFormat(String dataFormat) {
+        this.dataFormat = dataFormat;
     }
 }

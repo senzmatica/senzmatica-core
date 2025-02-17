@@ -53,8 +53,9 @@ public class Alert {
         return new Duration(startTime, endTime);
     }
 
-    // extra attributes to add more details
+    //extra attributes to add more details
     private Map<String, Object> meta = new HashMap<>();
+
 
     public Alert() {
     }

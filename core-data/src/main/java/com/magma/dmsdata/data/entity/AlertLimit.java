@@ -5,13 +5,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.magma.dmsdata.util.AlertPersistence;
 import com.magma.dmsdata.util.AlertStatus;
-import com.magma.dmsdata.util.SensorCode;
-
 import org.joda.time.DateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
+import java.util.Map;
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -26,7 +28,7 @@ public class AlertLimit {
 
     private Integer propertyNumber;
 
-    private SensorCode code;
+    private String code;
 
     private Integer level;
 
@@ -40,6 +42,8 @@ public class AlertLimit {
 
     private AlertPersistence persistence;
 
+    private List<String> label;
+
     @JsonIgnore
     private AlertStatus status;
 
@@ -50,6 +54,10 @@ public class AlertLimit {
     @JsonIgnore
     @LastModifiedDate
     private DateTime modifiedDate;
+
+    private DateTime notificationFoundAt = null;
+
+    private List<String> recordedLabels = null;
 
     public AlertLimit() {
     }
@@ -92,11 +100,11 @@ public class AlertLimit {
         this.propertyNumber = propertyNumber;
     }
 
-    public SensorCode getCode() {
+    public String getCode() {
         return code;
     }
 
-    public void setCode(SensorCode code) {
+    public void setCode(String code) {
         this.code = code;
     }
 
@@ -172,6 +180,17 @@ public class AlertLimit {
         this.modifiedDate = modifiedDate;
     }
 
+    public List<String> getLabel() { return label; }
+
+    public void setLabel(List<String> label) { this.label = label; }
+
+    public DateTime getNotificationFoundAt() { return notificationFoundAt; }
+
+    public void setNotificationFoundAt(DateTime notificationFoundAt) { this.notificationFoundAt = notificationFoundAt; }
+
+    public List<String> getRecordedLabels() { return recordedLabels; }
+
+    public void setRecordedLabels(List<String> recordedLabels) { this.recordedLabels = recordedLabels; }
     @Override
     public String toString() {
         return "AlertLimit{" +
@@ -187,6 +206,10 @@ public class AlertLimit {
                 ", status=" + status +
                 ", creationDate=" + creationDate +
                 ", modifiedDate=" + modifiedDate +
+                ", persistence=" + persistence +
+                ", label=" + label +
+                ", notificationFoundAt=" + notificationFoundAt +
+                ", recordedLabels=" + recordedLabels +
                 '}';
     }
 }

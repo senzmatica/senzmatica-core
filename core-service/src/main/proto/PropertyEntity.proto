@@ -7,7 +7,7 @@ message Property {
   string id = 1;
   string kitId = 2;
   int32 number = 3;
-  SensorCode code = 4; // need to get the enum when passing
+  string code = 4; // need to get the enum when passing
   string time = 5;
   double value = 6;
   double pivot = 7;

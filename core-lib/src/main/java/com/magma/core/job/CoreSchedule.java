@@ -8,16 +8,14 @@ import com.magma.dmsdata.data.entity.Offline;
 import com.magma.dmsdata.data.entity.Sensor;
 import com.magma.core.data.repository.*;
 import com.magma.dmsdata.data.support.DeviceSummary;
-import com.magma.core.service.CoreService;
 import com.magma.core.service.DeviceMaintenanceService;
-import com.magma.core.service.KitNotificationService;
+import com.magma.core.service.KitCoreService;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -30,9 +28,6 @@ import java.util.Map;
 public class CoreSchedule {
 
     @Autowired
-    private KitRepository kitRepository;
-
-    @Autowired
     private OfflineRepository offlineRepository;
 
     @Autowired
@@ -40,9 +35,6 @@ public class CoreSchedule {
 
     @Autowired
     SensorFailureValueRepository sensorFailureValueRepository;
-
-    @Autowired
-    KitNotificationService kitNotificationService;
 
     @Autowired
     SensorRepository sensorRepository;
@@ -54,7 +46,7 @@ public class CoreSchedule {
     DeviceMaintenanceService deviceMaintenanceService;
 
     @Autowired
-    CoreService coreService;
+    KitCoreService kitService;
 
     @Value("${device.offline.interval}")
     private Integer offlineInterval;
@@ -73,48 +65,6 @@ public class CoreSchedule {
 
 
     @Scheduled(fixedRateString = "${device.offline.interval}") //in milliseconds
-    public void analysisForEvery10Minutes() {
-        LOGGER.debug("Scheduler Running for Every 10mn");
-        DateTime now = MagmaTime.now();
-        kitRepository.findByPersistenceIsTrue().forEach(kit -> {
-            try {
-                if (Boolean.TRUE.equals(kit.getMaintain()) || kit.getInterval() == null || kit.getLastSeen() == null) {
-                    LOGGER.debug("Skip Offline Check : {}", kit);
-                    return;
-                }
-
-                boolean isOffline;
-                if (kit.getLastSeen().isBefore(now.minusMinutes(kit.getInterval() * 3))) {
-
-                    kit.setOffline(true);
-                    isOffline = true;
-                    Offline offline = offlineRepository.
-                            findByKitIdAndEndTimeGreaterThanOrderByStartTimeDesc(kit.getId(), now.minusMillis(offlineInterval * 5 / 4));
-
-                    if (offline == null) {
-                        offline = new Offline(kit.getId(), kit.getLastSeen(), now);
-                    } else {
-                        offline.setEndTime(now);
-                    }
-
-                    offline = offlineRepository.save(offline);
-                    kitNotificationService.sendOffline(kit, offline);
-
-                } else {
-                    kit.setOffline(false);
-                    isOffline = false;
-                }
-                coreService.updateKitOfflineStatus(kit.getId(), isOffline);
-                //kitRepository.save(kit);
-
-            } catch (Exception e) {
-                LOGGER.error("Exception In Schedule :", e);
-            }
-        });
-
-        DateTime end = MagmaTime.now();
-        LOGGER.debug("Scheduler Finished for Every 10mn Start : {}, End : {}", now, end);
-    }
 
     @Scheduled(cron = "0 30 6/18 * * ?", zone = "Asia/Colombo")
     public void sendMaintenanceAlert() {
@@ -204,9 +154,8 @@ public class CoreSchedule {
 
         HashMap<String, List<Double>> sensorFailureValues = new HashMap<>();
         sensorFailureValueRepository.findAll().forEach(obj -> {
-            sensorFailureValues.put(obj.getCode().toString(), obj.getValues());
+            sensorFailureValues.put(obj.getCode(), obj.getValues());
         });
-
 
         for (Device device : devices) {
             totalDevices.addDevice(device.getId());
@@ -232,7 +181,7 @@ public class CoreSchedule {
                 offlineDevices.addDevice(device.getId());
             }
 
-            if (deviceHistory.size() != 0) {
+            if (!deviceHistory.isEmpty()) {
                 int estimatorOnBatteryLast = 0;
                 int estimatorOnBattery = 0;
                 int minNoOfEntries = Math.min(countAnalyseDeviceSummary, batteryHistory.size());
@@ -304,10 +253,10 @@ public class CoreSchedule {
                     }
                 }
                 boolean isAnySensorOfDeviceFailure = false;
-                for (int ii = 0; ii < device.getSensorCodes().length && !isAnySensorOfDeviceFailure; ii++) {
+                for (i = 0; i < device.getSensorCodes().length && !isAnySensorOfDeviceFailure; i++) {
                     List<Sensor> deviceHistoryX = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                            new String(device.getId()), ii, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
-                    List<Double> sensorFailureValueX = sensorFailureValues.get(device.getSensorCodes()[ii]);
+                            new String(device.getId()), i, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
+                    List<Double> sensorFailureValueX = sensorFailureValues.get(device.getSensorCodes()[i]);
                     int estimatorSensorFailure = 0;
 
                     for (int j = 0; j < Math.min(countAnalyseDeviceSummary, deviceHistoryX.size()); j++) {
@@ -338,7 +287,6 @@ public class CoreSchedule {
         networkServiceInterruptionDevices.setNoOfDevice(noDevicesNetworkServiceInterruption);
         offlineDevices.setNoOfDevice(noDevicesOffline);
         totalDevices.setNoOfDevice(devices.size());
-//        deadDevices.setDeviceList(totalDevices.getDeviceList().stream().filter(x -> !aliveDevices.getDeviceList().contains(x)).collect(Collectors.toList()));
         deadDevices.setNoOfDevice(noDevicesDead);
 
         devicesSummary.clear();

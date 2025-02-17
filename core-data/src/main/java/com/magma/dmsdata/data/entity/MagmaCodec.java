@@ -1,7 +1,10 @@
 package com.magma.dmsdata.data.entity;
 
+import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import javax.validation.constraints.NotNull;
 
 @Document(collection = "magmaCodec")
 public class MagmaCodec {
@@ -9,10 +12,14 @@ public class MagmaCodec {
     @Id
     private String id;
 
+    @NotNull(message = "CodecName can't be null")
+    @NotEmpty(message = "CodecName can't be empty")
     private String codecName;
 
     private String decoderFileName;
 
+    @NotNull(message = "Decoder File Content can't be null")
+    @NotEmpty(message = "Decoder File Content can't be empty")
     private String decoderFileContent;
 
     private String decoderFileExtension;
@@ -21,12 +28,16 @@ public class MagmaCodec {
 
     private String encoderFileName;
 
+    @NotNull(message = "Encoder File Content can't be null")
+    @NotEmpty(message = "Encoder File Content can't be empty")
     private String encoderFileContent;
 
     private String encoderFileExtension;
 
     private boolean encoderStatus;
 
+    @NotNull(message = "Script Format can't be null")
+    @NotEmpty(message = "Script Format can't be empty")
     private String scriptFormat;
 
     public String getId() {

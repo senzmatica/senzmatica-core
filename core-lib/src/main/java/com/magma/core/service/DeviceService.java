@@ -1,28 +1,27 @@
 package com.magma.core.service;
 
 import com.magma.dmsdata.data.dto.DeviceDTO;
+import com.magma.dmsdata.data.entity.Device;
 import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.repository.*;
+import com.magma.dmsdata.data.support.ProductVersion;
 import com.magma.dmsdata.data.support.UserInfo;
 import com.magma.dmsdata.util.MagmaException;
 import com.magma.dmsdata.util.MagmaStatus;
-import com.magma.core.data.repository.*;
-import com.magma.util.MagmaResponse;
+import com.magma.dmsdata.util.ProductStatus;
+import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class DeviceService {
@@ -46,11 +45,19 @@ public class DeviceService {
     UserFavouriteService userFavouriteService;
 
     @Autowired
-    ProductTypesRepository productTypesRepository;
+    ProductTypeRepository productTypeRepository;
+
+    @Autowired
+    KitCoreService kitService;
 
     @Autowired
     SensorRepository sensorRepository;
 
+    @Autowired
+    DeviceMaintenanceRepository deviceMaintenanceRepository;
+
+    @Autowired
+    DeviceTestService deviceTestService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CoreService.class);
 
@@ -60,7 +67,7 @@ public class DeviceService {
         Device device = new Device();
         BeanUtils.copyProperties(deviceDTO, device);
 
-        return deviceCreateLogic(device);
+        return deviceCreateLogic(device,deviceDTO.getProductId());
     }
 
     public Device createDevice(DeviceDTO deviceDTO, String userId) {
@@ -68,26 +75,27 @@ public class DeviceService {
 
         Device device = new Device();
         UserInfo createdBy = new UserInfo();
-        LOGGER.debug("####User Id : {}", userId);
         UserInfo user = userConnectorService.findUser(userId);
-        LOGGER.debug("####User : {}", user);
 
-        if (user != null) {
+        BeanUtils.copyProperties(deviceDTO, device);
+        if(user != null) {
             BeanUtils.copyProperties(user, createdBy);
             device.setCreatedBy(createdBy);
         }
-        BeanUtils.copyProperties(deviceDTO, device);
 
-        return deviceCreateLogic(device);
+        return deviceCreateLogic(device,null);
     }
 
-    private Device deviceCreateLogic(Device device) {
+    private Device deviceCreateLogic(Device device, String productId) {
 
         if (!device.validate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
         if (deviceRepository.findById(device.getId()).orElse(null) != null) {
-            throw new MagmaException(MagmaStatus.DEVICE_ALREADY_EXISTS);
+            throw new MagmaException(MagmaStatus.DEVICE_ID_ALREADY_EXISTS);
+        }
+        if (!deviceRepository.findByName(device.getName()).isEmpty()) {
+            throw new MagmaException(MagmaStatus.DEVICE_NAME_ALREADY_EXISTS);
         }
 
         if (device.getInterval() == null) {
@@ -123,6 +131,27 @@ public class DeviceService {
             });
         }
         device.setBatchNumber(device.getBatchNumber());
+        device.setCreationDate(new DateTime());
+
+        //If device is added via setup senzmatica then need to set product Object to device with empty version details
+        if(productId!=null){
+            ProductType productTypes = productTypeRepository.findById(productId).orElse(null);
+            if(productTypes!=null){
+                ProductData product = new ProductData();
+                product.setProductId(productTypes.getId());
+                product.setProductType(productTypes.getProductName()); // here for now product type is used in ProductData class. we may need to change that to productName in future
+                product.setCurrentProductVersion("0.0.0");
+                List<String> availableVersionsInProduct = new ArrayList<>();
+                for (ProductVersion productVersion : productTypes.getVersions()) {
+                    if (productVersion.getVersionNum().equals("0.0.0")) {
+                        availableVersionsInProduct.add(productVersion.getVersionNum());
+                    }
+                }
+                product.setAvailableProductVersions(availableVersionsInProduct.toString() );
+                device.setProduct(product);
+            }
+        }
+
 
         return deviceRepository.save(device);
     }
@@ -140,16 +169,54 @@ public class DeviceService {
             //Adding sensor codes,Actuator codes,persistence, protocol and connectivity if   device is added under senzmatica 3.0
             // dont un comment this, store these details to db when creating a device
 //            if(d.getProductType()!=null){
-//                ProductTypes deviceProductType = productTypesRepository.findById(d.getProductType()).orElse(null);
+//                ProductTypes deviceProductType = productTypesRepository.findOne(d.getProductType());
 //                d.setSensorCodes(deviceProductType.getSensorCodes());
 //                d.setActuatorCodes(deviceProductType.getActuatorCodes());
 //                d.setPersistence(deviceProductType.isPersistence());
 //                d.setProtocol(deviceProductType.getProtocol());
 //                d.setConnectivity(deviceProductType.getConnectivity());
 //            }
+            if(d.getStatus()==null){
+                d.setStatus(Status.ACTIVE);
+            }
             allDevices.add(d);
         });
-        return allDevices;
+        return devices;
+    }
+
+    public List<Device> findDevicesWithFavouriteOrder(String userId) {
+        LOGGER.debug("Find all Devices With Favourite Order request found For User:{}", userId);
+        return userFavouriteService.getAllDevicesWithFavouriteOrder(userId);
+    }
+
+    public List<String> findFavouriteDeviceIds(String userId) {
+        LOGGER.debug("Find Ids of Favourite devices - For User:{}", userId);
+        return userFavouriteService.getUserFavouriteDevices(userId);
+    }
+
+    public List<String> addFavouriteDevicesBulk(String userId, List<String> deviceIds) {
+        LOGGER.debug("Add Bulk FavouriteDevices for a user -{} , deviceIds -{}", userId, deviceIds);
+        return userFavouriteService.addBulkDevicesAsFavourite(userId, deviceIds);
+    }
+
+    public List<String> removeFavouriteDevicesBulk(String userId, List<String> deviceIds) {
+        LOGGER.debug("Remove Bulk FavouriteDevices for a user -{} , deviceIds -{}", userId, deviceIds);
+        return userFavouriteService.removeDevicesFromFavourite(userId, deviceIds);
+    }
+
+    public String editFavouriteDevices(String userId, String deviceId, String action) {
+        LOGGER.debug("{} Favourite Device  Request For User:{},Device Id:{}", action.toUpperCase(Locale.ROOT), userId, deviceId);
+
+        if (action.equals("add")) {
+            userFavouriteService.updateDeviceAsFavourite(userId, deviceId);
+            return "Successfully added as favourite";
+
+        } else if (action.equals("remove")) {
+            userFavouriteService.RemoveDeviceAsFavourite(userId, deviceId);
+            return "Successfully removed from favourite";
+        } else {
+            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+        }
     }
 
     public Device findDeviceById(String deviceId) {
@@ -161,14 +228,42 @@ public class DeviceService {
 
         //Adding sensor codes,Actuator codes,persistence, protocol and connectivity if   device is added under senzmatica 3.0
         if (device.getProductType() != null) {
-            ProductTypes deviceProductType = productTypesRepository.findById(device.getProductType()).orElse(null);
+            ProductType deviceProductType = productTypeRepository.findByProductName(device.getProductType());
+            if (deviceProductType == null) {
+                throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND); //Change status
+            }
             device.setSensorCodes(deviceProductType.getSensorCodes());
             device.setActuatorCodes(deviceProductType.getActuatorCodes());
             device.setPersistence(deviceProductType.isPersistence());
             device.setProtocol(deviceProductType.getProtocol());
             device.setConnectivity(deviceProductType.getConnectivity());
         }
+        if(device.getStatus()==null){
+            device.setStatus(Status.ACTIVE);
+        }
         return device;
+    }
+
+    public List<Device> findDevicesByBatchNumber(String batchNumber) {
+        LOGGER.debug("Find Devices request found : {}", batchNumber);
+        return deviceRepository.findByBatchNumber(batchNumber);
+    }
+
+    public List<Device> findDevicesByIdIn(List<String> ids) {
+        LOGGER.debug("Find Devices request found : {}", ids);
+        return deviceRepository.findByIdIn(ids);
+    }
+
+    public String deleteDevicesByBatchNumber(String BatchNumber) {
+        LOGGER.debug("Delete Devices request found : {}", BatchNumber);
+        List<Device> devices = deviceRepository.findByBatchNumber(BatchNumber);
+        deviceRepository.deleteAll(devices);
+        return "Successfully Deleted";
+    }
+
+    public List<Device> findDevicesByIdInAndOfflineIsTrue(List<String> ids) {
+        LOGGER.debug("Find Devices request found : {}", ids);
+        return deviceRepository.findByIdInAndOfflineIsTrue(ids);
     }
 
     public Device updateDevice(String deviceId, DeviceDTO deviceDTO) {
@@ -258,6 +353,18 @@ public class DeviceService {
         if (deviceDTO.getTemperatureUnit() != null) {
             db.setTemperatureUnit(deviceDTO.getTemperatureUnit());
         }
+        if (deviceDTO.getRemoteConfigTopic() != null) {
+            db.setRemoteConfigTopic(deviceDTO.getRemoteConfigTopic());
+        }
+        if (deviceDTO.getRemoteConfigAckTopic() != null) {
+            db.setRemoteConfigAckTopic(deviceDTO.getRemoteConfigAckTopic());
+        }
+        if (deviceDTO.getOtaRequestTopic() != null) {
+            db.setOtaRequestTopic(deviceDTO.getOtaRequestTopic());
+        }
+        if (deviceDTO.getOtaAckTopic() != null) {
+            db.setOtaAckTopic(deviceDTO.getOtaAckTopic());
+        }
 
         if (!deviceDTO.getShiftMap().isEmpty()) {
             deviceDTO.getShiftMap().forEach((key1, value1) -> {
@@ -287,36 +394,63 @@ public class DeviceService {
         device.getMetaData().putAll(metaData);
     }
 
-    public String updatePersistence(String kitId, Boolean persistence) {
-        LOGGER.debug("Persistence request found Kit : {}, Persistence : {}", kitId, persistence);
+//    public String updatePersistence(String kitId, Boolean persistence) {
+//        LOGGER.debug("Persistence request found Kit : {}, Persistence : {}", kitId, persistence);
+//
+//        if (persistence == null) {
+//            throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
+//        }
+//
+//        Kit db = kitService.findKitById(kitId);
+//        db.setPersistence(persistence);
+//
+//        //TODO: Can update via MongoTemplate
+//        List<Device> devices = deviceRepository.findByIdIn(db.getDevices());
+//        devices.stream().forEach(device -> device.setPersistence(persistence));
+//        deviceRepository.saveAll(devices);
+//
+//        kitRepository.save(db);
+//
+//        return "Successfully Updated";
+//    }
 
-        if (persistence == null) {
+    public String updateDeviceMode(String deviceId, String status) {
+        LOGGER.debug("device mode update request found Device : {}, status : {}", deviceId, status);
+
+        if (status == null) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Kit db = kitRepository.findById(kitId).orElse(null);
-        if (db == null) {
-            throw new MagmaException(MagmaStatus.KIT_NOT_FOUND);
+        Device deviceDb = deviceRepository.findById(deviceId).orElse(null);
+        if (deviceDb != null) {
+            deviceDb.setStatus(Status.valueOf(status));
         }
 
-        db.setPersistence(persistence);
+        deviceRepository.save(deviceDb);
+        Kit kitWithDevice=kitRepository.findByDevices(deviceId);
+        if(kitWithDevice!=null){
+            List<String> devicesInKit=kitWithDevice.getDevices();
 
-        //TODO: Can update via MongoTemplate
-        List<Device> devices = deviceRepository.findByIdIn(db.getDevices());
-        devices.stream().forEach(device -> device.setPersistence(persistence));
-        deviceRepository.saveAll(devices);
+            boolean activeDeviceInKit = devicesInKit.stream()
+                    .map(deviceRepository::findById)
+                    .map(optionalDevice -> optionalDevice.orElse(null))
+                    .filter(Objects::nonNull)
+                    .anyMatch(device -> device.getStatus() != Status.INACTIVE);
+            if (activeDeviceInKit){
+                kitWithDevice.setStatus(Status.ACTIVE);}
+            else {
+                kitWithDevice.setStatus(Status.INACTIVE);
+            }
+            kitRepository.save(kitWithDevice);}
 
-        kitRepository.save(db);
-
-        return "Successfully Updated";
+        return "Device mode successfully Updated";
     }
 
     public String deleteDevice(String deviceId) {
         LOGGER.debug("Delete request found DeviceId : {}", deviceId);
         deviceRepository.deleteById(deviceId);
-        return "Successfully Updated";
+        return "Successfully Deleted";
     }
-
 
     public List<Sensor> getAllSensorDetailsByDeviceId(String deviceId) {
         Device requestedDevice = deviceRepository.findById(deviceId).orElse(null);
@@ -397,14 +531,63 @@ public class DeviceService {
             });
             db.setShiftMap(device.getShiftMap());
         }
-
+        if (device.getRemoteConfigTopic() != null) {
+            db.setRemoteConfigTopic(device.getRemoteConfigTopic());
+        }
+        if (device.getRemoteConfigAckTopic() != null) {
+            db.setRemoteConfigAckTopic(device.getRemoteConfigAckTopic());
+        }
+        if (device.getOtaRequestTopic() != null) {
+            db.setOtaRequestTopic(device.getOtaRequestTopic());
+        }
+        if (device.getOtaAckTopic() != null) {
+            db.setOtaAckTopic(device.getOtaAckTopic());
+        }
         deviceRepository.save(db);
 
         return "Successfully Updated";
     }
 
-    public List<String> findFavouriteDeviceIds(String userId) {
-        LOGGER.debug("Find Ids of Favourite devices - For User:{}", userId);
-        return userFavouriteService.getUserFavouriteDevices(userId);
+    public List<DeviceMaintenance> findMaintenanceHistoryByKitAndNumber(String deviceId, Integer number, Sort.Direction direction, String from, String to) {
+        LOGGER.debug("Find Sensor request found Device : {}, Number : {}", deviceId, number);
+
+        Device device = findDeviceById(deviceId);
+
+        if (device.getSensorCodes().length < number) {
+            throw new MagmaException(MagmaStatus.SENSOR_NOT_FOUND);
+        }
+
+        if (to == null && from == null) {
+            to = MagmaTime.format(MagmaTime.now());
+            from = MagmaTime.format(MagmaTime.now().minusDays(1));
+        } else if (to == null) {
+            to = from;
+            from += " 00:00";
+            to += " 23:59";
+        } else if (from == null) {
+            from = to;
+            from += " 00:00";
+            to += " 23:59";
+        } else {
+            from += " 00:00";
+            to += " 23:59";
+        }
+
+        if (direction != null && direction.isDescending()) {
+            return deviceMaintenanceRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to)
+            );
+        } else {
+            return  deviceMaintenanceRepository.findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(
+                    deviceId,
+                    number,
+                    MagmaTime.parse(from),
+                    MagmaTime.parse(to)
+            );
+
+        }
     }
 }

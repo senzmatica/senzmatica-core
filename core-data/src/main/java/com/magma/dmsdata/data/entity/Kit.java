@@ -10,7 +10,6 @@ import com.magma.dmsdata.data.support.Shift;
 import com.magma.dmsdata.data.support.UserInfo;
 import com.magma.dmsdata.util.DataInputMethod;
 import com.magma.dmsdata.util.MagmaModelSerializer;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
@@ -44,13 +43,13 @@ public class Kit {
 
     private List<String> devices;
 
-    private List<SensorCode> sensorSort;
+    private Map<SensorCode, Integer> sensorSort = new HashMap<>();
 
-    // <DeviceId, Index> TODO: Have to Remove
+    //<DeviceId, Index> TODO: Have to Remove
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Map<String, Integer> deviceMap = new HashMap<>();
 
-    // <DeviceId, Offset>
+    //<DeviceId, Offset>
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Map<String, Offset> offsetMap = new HashMap<>();
 
@@ -112,6 +111,9 @@ public class Kit {
     private UserInfo createdBy;
 
     private UserInfo modifiedBy;
+
+    //Added below parameter to support polar snapshot multi line feature
+    private Boolean multiLineEnabled;
 
     public Kit() {
     }
@@ -356,12 +358,20 @@ public class Kit {
         this.modifiedBy = modifiedBy;
     }
 
-    public List<SensorCode> getSensorSort() {
+    public Map<SensorCode, Integer> getSensorSort() {
         return sensorSort;
     }
 
-    public void setSensorSort(List<SensorCode> sensorSort) {
+    public void setSensorSort(Map<SensorCode, Integer> sensorSort) {
         this.sensorSort = sensorSort;
+    }
+
+    public Boolean getMultiLineEnabled() {
+        return multiLineEnabled;
+    }
+
+    public void setMultiLineEnabled(Boolean multiLineEnabled) {
+        this.multiLineEnabled = multiLineEnabled;
     }
 
     @Override
@@ -396,6 +406,7 @@ public class Kit {
                 ", referenceName='" + referenceName + '\'' +
                 ", createdBy=" + createdBy +
                 ", modifiedBy=" + modifiedBy +
+                ", multiLineEnabled=" + multiLineEnabled +
                 '}';
     }
 }

@@ -1,9 +1,10 @@
 package com.magma.dmsdata.data.support;
 
+import com.magma.dmsdata.util.ProductStatus;
+
 import java.util.List;
 import java.util.Map;
 
-import com.magma.dmsdata.util.ProductStatus;
 
 public class ProductVersion {
 
@@ -15,7 +16,7 @@ public class ProductVersion {
 
     private String binURL;
 
-    private List<ProductParameter> remoteConfigurations;
+    private List<RemoteConfigField> remoteConfigurations;
 
     private String flowChartURL;
 
@@ -25,13 +26,17 @@ public class ProductVersion {
 
     private Map<String, List<String>> joinParameters;
 
-    private String serverIpAddress;
-
     private String fileName;
 
     private Boolean majorVersionUpgrade;
 
+    private  String flowChartFileName;
+
     public ProductVersion() {
+    }
+
+    public ProductVersion(String versionNum) {
+        this.versionNum = versionNum;
     }
 
     public String getVersionNum() {
@@ -58,11 +63,11 @@ public class ProductVersion {
         this.binURL = binURL;
     }
 
-    public List<ProductParameter> getRemoteConfigurations() {
+    public List<RemoteConfigField> getRemoteConfigurations() {
         return remoteConfigurations;
     }
 
-    public void setRemoteConfigurations(List<ProductParameter> remoteConfigurations) {
+    public void setRemoteConfigurations(List<RemoteConfigField> remoteConfigurations) {
         this.remoteConfigurations = remoteConfigurations;
     }
 
@@ -98,14 +103,6 @@ public class ProductVersion {
         this.statusChangedBy = statusChangedBy;
     }
 
-    public String getServerIpAddress() {
-        return serverIpAddress;
-    }
-
-    public void setServerIpAddress(String serverIpAddress) {
-        this.serverIpAddress = serverIpAddress;
-    }
-
     public Map<String, List<String>> getJoinParameters() {
         return joinParameters;
     }
@@ -128,5 +125,13 @@ public class ProductVersion {
 
     public void setMajorVersionUpgrade(Boolean majorVersionUpgrade) {
         this.majorVersionUpgrade = majorVersionUpgrade;
+    }
+
+    public String getFlowChartFileName() {
+        return flowChartFileName;
+    }
+
+    public void setFlowChartFileName(String flowChartFileName) {
+        this.flowChartFileName = flowChartFileName;
     }
 }

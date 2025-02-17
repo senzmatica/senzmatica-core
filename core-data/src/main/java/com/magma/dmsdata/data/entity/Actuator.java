@@ -3,8 +3,10 @@ package com.magma.dmsdata.data.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.util.ActuatorCode;
+import com.magma.util.MagmaDateTimeDeserializer;
 import com.magma.util.MagmaDateTimeSerializer;
 import com.magma.util.MagmaUtil;
 import org.joda.time.DateTime;
@@ -28,9 +30,11 @@ public class Actuator {
     private ActuatorCode code;
 
     @JsonSerialize(using = MagmaDateTimeSerializer.class)
+    @JsonDeserialize(using = MagmaDateTimeDeserializer.class)
     private DateTime time;
 
     private String value;
+
 
     @JsonIgnore
     @CreatedDate
@@ -56,6 +60,7 @@ public class Actuator {
                 number != null &&
                 code != null;
     }
+
 
     public String getId() {
         return id;

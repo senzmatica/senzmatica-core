@@ -46,6 +46,14 @@ public class VerneMqService {
         return vmq_acl_authRepository.findAll();
     }
 
+    public Vmq_acl_auth getVmqAclOneClient(String vernemqId) {
+        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(vernemqId).orElse(null);
+        if (vmq_acl_auth == null) {
+            throw new MagmaException(MagmaStatus.CLIENT_NOT_FOUND);
+        }
+        return vmq_acl_auth;
+    }
+
 
     public String deleteVernemq(String vernemqId) {
         Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(vernemqId).orElse(null);
@@ -66,7 +74,7 @@ public class VerneMqService {
         }
 
         if (vmqAclAuth == null) {
-            throw new MagmaException(MagmaStatus.INVALID_INPUT);
+            throw new MagmaException(MagmaStatus.CLIENT_NOT_FOUND);
         }
 
         if (!vmqAclAuth.getClient_id().equals(updatedVernemq.getClient_id())) {
@@ -122,6 +130,37 @@ public class VerneMqService {
         }
 
         return clientIdsWithProtocolAndDeviceCount;
+    }
+
+    public Vmq_acl_auth updateActionKey(String client_id, boolean status) {
+        Vmq_acl_auth client = vmq_acl_authRepository.findClientId(client_id);
+        if (client == null) {
+            throw new MagmaException(MagmaStatus.ERROR);
+        }
+        client.setStatus(status);
+
+        if (status) {
+            client.setPasshash(client.getBackupPasshash());
+        } else {
+            client.setPasshash(null);
+        }
+
+        if (client.isProtect()) {
+            throw new MagmaException(MagmaStatus.DATA_PROTECTED);
+        }
+
+        return vmq_acl_authRepository.save(client);
+    }
+
+    public Vmq_acl_auth updateMqttProtection(String clientId, boolean protect) {
+        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(clientId).orElse(null);
+        if (vmq_acl_auth == null) {
+            throw new MagmaException(MagmaStatus.ERROR);
+        }
+
+        vmq_acl_auth.setProtect(protect);
+        vmq_acl_authRepository.save(vmq_acl_auth);
+        return vmq_acl_auth;
     }
 
     private void validateClientId(String clientId) {

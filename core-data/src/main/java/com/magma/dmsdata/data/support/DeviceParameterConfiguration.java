@@ -1,28 +1,21 @@
 package com.magma.dmsdata.data.support;
 
-import org.springframework.data.annotation.Id;
-
-import com.magma.dmsdata.util.DeviceCategory;
-import com.magma.dmsdata.util.ProductType;
-
 import java.util.List;
 import java.util.Map;
 
 public class DeviceParameterConfiguration {
 
-    @Id
     private String device;
-    private ProductType productType;
+    private String productType;
     private String versionNum;
-    private DeviceCategory deviceCategory;
-    private List<ProductParameter> remoteConfigurations;
+    private List<RemoteConfigField> remoteConfigurations;
 
     private Map<String, List<String>> joinParameters;
 
     private List<DeviceParameterConfigurationHistory> updateHistory;
     private String serverIpAddress;
 
-    public ProductType getProductType() {
+    public String getProductType() {
         return productType;
     }
 
@@ -34,7 +27,7 @@ public class DeviceParameterConfiguration {
         this.device = device;
     }
 
-    public void setProductType(ProductType productType) {
+    public void setProductType(String productType) {
         this.productType = productType;
     }
 
@@ -46,19 +39,11 @@ public class DeviceParameterConfiguration {
         this.versionNum = versionNum;
     }
 
-    public DeviceCategory getDeviceCategory() {
-        return deviceCategory;
-    }
-
-    public void setDeviceCategory(DeviceCategory deviceCategory) {
-        this.deviceCategory = deviceCategory;
-    }
-
-    public List<ProductParameter> getRemoteConfigurations() {
+    public List<RemoteConfigField> getRemoteConfigurations() {
         return remoteConfigurations;
     }
 
-    public void setRemoteConfigurations(List<ProductParameter> remoteConfigurations) {
+    public void setRemoteConfigurations(List<RemoteConfigField> remoteConfigurations) {
         this.remoteConfigurations = remoteConfigurations;
     }
 

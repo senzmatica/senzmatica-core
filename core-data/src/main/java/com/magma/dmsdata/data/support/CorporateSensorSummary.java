@@ -2,7 +2,6 @@ package com.magma.dmsdata.data.support;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.util.SensorCode;
 import com.magma.util.MagmaDateTimeSerializer;
 import org.joda.time.DateTime;
 
@@ -20,11 +19,11 @@ public class CorporateSensorSummary {
 
     private int totalNumbersOfSensorsInCorporate;
 
-    private List<SensorCode> sensorCodesInCorporate;
+    private List<String> sensorCodesInCorporate;
 
     private List<String> sensorsInCorporate;
 
-    // <"Temp",<"failureSensors",5>>
+    //  <"Temp",<"failureSensors",5>>
     private Map<String, Map<String, Integer>> propertySensorSummaryMap;
 
     // <"Temp",<"failureSensorsDevices',[D1,D2]>>
@@ -64,11 +63,11 @@ public class CorporateSensorSummary {
         this.totalNumbersOfSensorsInCorporate = totalNumbersOfSensorsInCorporate;
     }
 
-    public List<SensorCode> getSensorCodesInCorporate() {
+    public List<String> getSensorCodesInCorporate() {
         return sensorCodesInCorporate;
     }
 
-    public void setSensorCodesInCorporate(List<SensorCode> sensorCodesInCorporate) {
+    public void setSensorCodesInCorporate(List<String> sensorCodesInCorporate) {
         this.sensorCodesInCorporate = sensorCodesInCorporate;
     }
 
@@ -108,8 +107,7 @@ public class CorporateSensorSummary {
         return propertySensorSummaryDeviceMap;
     }
 
-    public void setPropertySensorSummaryDeviceMap(
-            Map<String, Map<String, List<Device>>> propertySensorSummaryDeviceMap) {
+    public void setPropertySensorSummaryDeviceMap(Map<String, Map<String, List<Device>>> propertySensorSummaryDeviceMap) {
         this.propertySensorSummaryDeviceMap = propertySensorSummaryDeviceMap;
     }
 }

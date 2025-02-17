@@ -2,7 +2,6 @@ package com.magma.core.data.repository;
 
 import com.magma.dmsdata.data.entity.Property;
 import com.magma.dmsdata.data.entity.Sensor;
-import com.magma.dmsdata.util.SensorCode;
 import org.joda.time.DateTime;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -18,11 +17,30 @@ public interface SensorRepository extends MongoRepository<Sensor, String> {
 
     Sensor findByDeviceIdOrderByTimeDesc(String deviceId);
 
+    List<Sensor> findTop12ByDeviceIdOrderByTimeAsc(String deviceId);
+
+    List<Sensor> findByDeviceIdAndTime(String deviceId, DateTime time);
+
     Sensor findByDeviceIdAndNumberAndTime(String deviceId, Integer number, DateTime time);
+    Sensor findByDeviceIdAndNumber(String deviceId, Integer number);
 
     List<Sensor> findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAsc(String deviceId, Integer number, DateTime start, DateTime end);
 
     List<Sensor> findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDesc(String deviceId, Integer number, DateTime start, DateTime end);
+
+    @Query(value = "{ 'deviceId': ?0, 'number': ?1, 'time': { $gte: ?2, $lte: ?3 } }",   //latency test Dilax(drop - size 50%, time 5-10% in local)
+            fields = "{ 'id': 1, 'time': 1, 'value': 1, 'label': 1 }")
+    List<Sensor> findByDeviceIdAndNumberAndTimeBetweenOrderByTimeAscNew(String deviceId,
+                                                                        Integer number,
+                                                                        DateTime start,
+                                                                        DateTime end);
+
+    @Query(value = "{ 'deviceId': ?0, 'number': ?1, 'time': { $gte: ?2, $lte: ?3 } }",
+            fields = "{ 'id': 1, 'time': 1, 'value': 1, 'label': 1 }")
+    List<Sensor> findByDeviceIdAndNumberAndTimeBetweenOrderByTimeDescNew(String deviceId,
+                                                                         Integer number,
+                                                                         DateTime start,
+                                                                         DateTime end);
 
 //    List<Sensor> findByDeviceIdAndNumberOrderByTimeDesc(String deviceId, Integer number);
 
@@ -32,7 +50,9 @@ public interface SensorRepository extends MongoRepository<Sensor, String> {
 
     List<Sensor> findByDeviceIdAndTimeBetween(String deviceId, DateTime startDateTime, DateTime endDateTime);
 
-    List<Sensor> findByDeviceIdAndCodeAndTimeBetween(String deviceId, SensorCode code, DateTime startDateTime, DateTime endDateTime);
+    List<Sensor> findByDeviceIdAndCodeAndTimeBetween(String deviceId, String code, DateTime startDateTime, DateTime endDateTime);
+
+    List<Sensor> findByDeviceIdAndCodeAndTimeBetweenOrderByTimeAsc(String deviceId, String code, DateTime startDateTime, DateTime endDateTime);
 
     List<Sensor> findByDeviceIdAndNumberAndTimeBetween(String deviceId, Integer number, DateTime start, DateTime end);
 
@@ -43,5 +63,15 @@ public interface SensorRepository extends MongoRepository<Sensor, String> {
     List<Property> findByTimeIntervalAndCodeAndKitId(DateTime startTime, DateTime endTime, String code, String kidId);
 
     @Query("{'creationDate': {'$gte': ?0, '$lte': ?1}, 'code': ?2, 'value': {'$gt': ?3, '$lt': ?4}}")
-    Boolean existsByTimeIntervalAndCodeAndValue(DateTime startTime, DateTime endTime, SensorCode code, Integer minValue, Integer maxValue);
+    Boolean existsByTimeIntervalAndCodeAndValue(DateTime startTime, DateTime endTime, String code, Integer minValue, Integer maxValue);
+
+    @Query(fields = "{'deviceId': 1, 'code': 1, 'value': 1, 'time': 1, '_id': 0}")
+    List<Sensor> findByTimeBetween(DateTime startTime, DateTime endTime);
+
+    List<Sensor> findByDeviceIdAndTimeBetweenOrderByTimeAsc(String deviceId, DateTime startDateTime, DateTime endDateTime);
+
+    List<Sensor> findTop2ByDeviceIdAndCodeOrderByTimeAsc(String deviceId, String code);
+
+    List<Sensor> findTop240ByDeviceIdOrderByTimeDesc(String deviceId);
+
 }

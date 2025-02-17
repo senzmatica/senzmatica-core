@@ -1,9 +1,8 @@
 package com.magma.dmsdata.data.entity;
 
+import com.magma.dmsdata.data.support.OTAUpgradeHistory;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.magma.dmsdata.data.support.OTAUpgradeHistory;
 
 import java.util.List;
 

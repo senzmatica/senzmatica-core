@@ -2,6 +2,7 @@ package com.magma.core.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jmx.access.InvocationFailureException;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -65,6 +66,9 @@ public class RunDecoderFileService {
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                     return "Class not found: " + e.getMessage();
+                } catch (InvocationFailureException e) {
+                    e.getCause().printStackTrace();
+                    return "AssertionError: "+ e.getMessage();
                 } catch (Exception e) {
                     e.printStackTrace();
                     return "Error during reflection: " + e.getMessage();

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface Http_acl_authRepository extends MongoRepository<Http_acl_auth, String> {
 
+
     @Query("{ 'client_id': ?0}")
     Http_acl_auth findClientId(String clientId);
 

@@ -1,6 +1,5 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.entity.Kit;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,11 +13,6 @@ public class CorporateConnectorServiceCore extends CorporateConnectorService {
 
     @Override
     public void sendSMSBulk(String userId, List<String> toList, String message) {
-    }
-
-    @Override
-    public List<Kit> findKitsInCorporate(String corporateId) {
-        return null;
     }
 
     @Override
