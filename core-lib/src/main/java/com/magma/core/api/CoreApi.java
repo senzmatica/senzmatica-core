@@ -1,13 +1,13 @@
 package com.magma.core.api;
 
-import com.magma.dmsdata.data.dto.*;
-import com.magma.dmsdata.data.entity.*;
-import com.magma.dmsdata.data.support.*;
+import com.magma.core.data.dto.*;
+import com.magma.core.data.entity.*;
+import com.magma.core.data.support.*;
 import com.magma.core.gateway.HTTPMessageHandler;
 import com.magma.core.job.CoreSchedule;
 import com.magma.core.service.*;
-import com.magma.dmsdata.util.*;
-import com.magma.dmsdata.validation.BadRequestException;
+import com.magma.core.util.*;
+import com.magma.core.validation.BadRequestException;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,7 +76,7 @@ public class CoreApi {
                                               @PathVariable("userId") String userId,
                                               BindingResult result) {
         if (result.hasErrors()) {
-            throw new com.magma.dmsdata.validation.BadRequestException(result.getAllErrors());
+            throw new com.magma.core.validation.BadRequestException(result.getAllErrors());
         }
         return new MagmaResponse<>(deviceService.createDevice(deviceDTO, userId));
     }
@@ -379,7 +379,7 @@ public class CoreApi {
     public MagmaResponse<TypeOfKit> createKitType(@RequestBody @Valid TypeOfKitDTO typeOfKitDTO,
                                                   BindingResult result) {
         if (result.hasErrors()) {
-            throw new com.magma.dmsdata.validation.BadRequestException(result.getAllErrors());
+            throw new com.magma.core.validation.BadRequestException(result.getAllErrors());
         }
         return new MagmaResponse<>(coreService.createKitType(typeOfKitDTO));
     }

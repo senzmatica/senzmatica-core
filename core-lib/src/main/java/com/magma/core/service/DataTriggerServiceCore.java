@@ -1,9 +1,9 @@
 package com.magma.core.service;
 
 
-import com.magma.dmsdata.data.entity.Action;
-import com.magma.dmsdata.data.entity.DeviceMaintenance;
-import com.magma.dmsdata.data.entity.Property;
+import com.magma.core.data.entity.Action;
+import com.magma.core.data.entity.DeviceMaintenance;
+import com.magma.core.data.entity.Property;
 
 import java.util.ArrayList;
 import java.util.Map;

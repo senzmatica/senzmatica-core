@@ -7,7 +7,7 @@
     <groupId>com.magma.core</groupId>
     <artifactId>magma-core</artifactId>
     <packaging>pom</packaging>
-    <version>1.2.0.0</version>
+    <version>${magma.version}</version>
 
     <modules>
         <module>core-data</module>
@@ -18,33 +18,14 @@
 
     <properties>
         <jdk.version>1.8</jdk.version>
+        <magma.version>5.0.0.0</magma.version>
+        <ums.version>6.0.0.4</ums.version>
     </properties>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.9</version>
+        <version>1.5.10.RELEASE</version>
     </parent>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.0</version>
-                <configuration>
-                    <source>${jdk.version}</source>
-                    <target>${jdk.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

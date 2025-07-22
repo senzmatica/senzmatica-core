@@ -1,10 +1,10 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.DataHTTP;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
+import com.magma.core.data.support.DataHTTP;
+import com.magma.core.util.MagmaException;
+import com.magma.core.util.MagmaStatus;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;

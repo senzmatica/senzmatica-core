@@ -1,14 +1,14 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.dto.DeviceDTO;
-import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.dto.DeviceDTO;
+import com.magma.core.data.entity.Device;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.ProductVersion;
-import com.magma.dmsdata.data.support.UserInfo;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
-import com.magma.dmsdata.util.ProductStatus;
+import com.magma.core.data.support.ProductVersion;
+import com.magma.core.data.support.UserInfo;
+import com.magma.core.util.MagmaException;
+import com.magma.core.util.MagmaStatus;
+import com.magma.core.util.ProductStatus;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import com.magma.util.Status;
@@ -91,7 +91,7 @@ public class DeviceService {
         if (!device.validate()) {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
-        if (deviceRepository.findById(device.getId()).orElse(null) != null) {
+        if (deviceRepository.findOne(device.getId()) != null) {
             throw new MagmaException(MagmaStatus.DEVICE_ID_ALREADY_EXISTS);
         }
         if (!deviceRepository.findByName(device.getName()).isEmpty()) {
@@ -135,7 +135,7 @@ public class DeviceService {
 
         //If device is added via setup senzmatica then need to set product Object to device with empty version details
         if(productId!=null){
-            ProductType productTypes = productTypeRepository.findById(productId).orElse(null);
+            ProductType productTypes = productTypeRepository.findOne(productId);
             if(productTypes!=null){
                 ProductData product = new ProductData();
                 product.setProductId(productTypes.getId());
@@ -221,7 +221,7 @@ public class DeviceService {
 
     public Device findDeviceById(String deviceId) {
         LOGGER.debug("Find Device request found : {}", deviceId);
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
@@ -257,7 +257,7 @@ public class DeviceService {
     public String deleteDevicesByBatchNumber(String BatchNumber) {
         LOGGER.debug("Delete Devices request found : {}", BatchNumber);
         List<Device> devices = deviceRepository.findByBatchNumber(BatchNumber);
-        deviceRepository.deleteAll(devices);
+        deviceRepository.delete(devices);
         return "Successfully Deleted";
     }
 
@@ -421,7 +421,7 @@ public class DeviceService {
             throw new MagmaException(MagmaStatus.MISSING_REQUIRED_PARAMS);
         }
 
-        Device deviceDb = deviceRepository.findById(deviceId).orElse(null);
+        Device deviceDb = deviceRepository.findOne(deviceId);
         if (deviceDb != null) {
             deviceDb.setStatus(Status.valueOf(status));
         }
@@ -432,8 +432,8 @@ public class DeviceService {
             List<String> devicesInKit=kitWithDevice.getDevices();
 
             boolean activeDeviceInKit = devicesInKit.stream()
-                    .map(deviceRepository::findById)
-                    .map(optionalDevice -> optionalDevice.orElse(null))
+                    .map(deviceRepository::findOne)
+                    .map(optionalDevice -> optionalDevice)
                     .filter(Objects::nonNull)
                     .anyMatch(device -> device.getStatus() != Status.INACTIVE);
             if (activeDeviceInKit){
@@ -448,12 +448,12 @@ public class DeviceService {
 
     public String deleteDevice(String deviceId) {
         LOGGER.debug("Delete request found DeviceId : {}", deviceId);
-        deviceRepository.deleteById(deviceId);
+        deviceRepository.delete(deviceId);
         return "Successfully Deleted";
     }
 
     public List<Sensor> getAllSensorDetailsByDeviceId(String deviceId) {
-        Device requestedDevice = deviceRepository.findById(deviceId).orElse(null);
+        Device requestedDevice = deviceRepository.findOne(deviceId);
         if (requestedDevice == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }

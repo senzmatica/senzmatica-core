@@ -10,32 +10,37 @@ public class KeySenderServiceUms extends KeySenderService {
 
     @Override
     public String resendKeyViaEmail(User arg0, SecretKey arg1, String arg2) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'resendKeyViaEmail'");
     }
 
     @Override
     public String resendKeyViaSMS(User arg0, SecretKey arg1) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'resendKeyViaSMS'");
     }
 
     @Override
-    public String sendKeyViaEmail(User arg0, SecretKey arg1,
-                                  String arg2) {
+    public String sendKey(User arg0, SecretKey arg1) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'sendKey'");
+    }
+
+    @Override
+    public String sendKeyViaEmail(User arg0, SecretKey arg1, String arg2) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'sendKeyViaEmail'");
     }
 
     @Override
     public String sendKeyViaSMS(User arg0, SecretKey arg1) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'sendKeyViaSMS'");
     }
 
     @Override
-    public String sendNotification(User user, String s, String s1) {
-        return null;
-    }
-
-    @Override
-    public String sendKey(User user, SecretKey secretKey) {
-        return null;
+    public String sendNotification(User arg0, String arg1, String arg2) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'sendNotification'");
     }
 }

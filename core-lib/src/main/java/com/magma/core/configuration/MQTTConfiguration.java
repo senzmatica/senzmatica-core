@@ -131,11 +131,9 @@ public class MQTTConfiguration {
     @Bean
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
-        MqttConnectOptions options = new MqttConnectOptions();
-        options.setServerURIs(new String[]{mqttBrokerAddress});
-        options.setUserName(mqttClientUsername);
-        options.setPassword(mqttClientPassword.toCharArray());
-        factory.setConnectionOptions(options);
+        factory.setServerURIs(mqttBrokerAddress);
+        factory.setUserName(mqttClientUsername);
+        factory.setPassword(mqttClientPassword);
         return factory;
     }
 

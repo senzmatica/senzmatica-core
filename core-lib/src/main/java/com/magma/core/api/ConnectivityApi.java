@@ -1,12 +1,12 @@
 package com.magma.core.api;
 
-import com.magma.dmsdata.data.dto.HttpAclAuthDTO;
-import com.magma.dmsdata.data.entity.Http_acl_auth;
-import com.magma.dmsdata.data.entity.Vmq_acl_auth;
+import com.magma.core.data.dto.HttpAclAuthDTO;
+import com.magma.core.data.entity.Http_acl_auth;
+import com.magma.core.data.entity.Vmq_acl_auth;
 import com.magma.core.service.HttpService;
 import com.magma.core.service.MagmaCodecService;
 import com.magma.core.service.VerneMqService;
-import com.magma.dmsdata.validation.BadRequestException;
+import com.magma.core.validation.BadRequestException;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;

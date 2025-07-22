@@ -7,7 +7,7 @@
     <parent>
         <artifactId>magma-core</artifactId>
         <groupId>com.magma.core</groupId>
-        <version>1.2.0.0</version>
+        <version>${magma.version}</version>
     </parent>
 
     <artifactId>core-test</artifactId>
@@ -24,8 +24,8 @@
 
         <dependency>
             <groupId>com.magma.core</groupId>
-            <artifactId>core-lib</artifactId>
-            <version>1.2.0.0</version>
+            <artifactId>core-service</artifactId>
+            <version>${magma.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -59,13 +59,6 @@
                 <configuration>
                     <source>${jdk.version}</source>
                     <target>${jdk.version}</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

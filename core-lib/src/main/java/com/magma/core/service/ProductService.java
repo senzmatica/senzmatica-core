@@ -2,14 +2,14 @@ package com.magma.core.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.dmsdata.data.dto.ProductDTO;
-import com.magma.dmsdata.data.dto.ProductTypeDTO;
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.dto.ProductDTO;
+import com.magma.core.data.dto.ProductTypeDTO;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.*;
-import com.magma.dmsdata.util.*;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
+import com.magma.core.data.support.*;
+import com.magma.core.util.*;
+import com.magma.core.util.MagmaException;
+import com.magma.core.util.MagmaStatus;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class ProductService {
         ProductVersion versionFromRequest = parseProductVersion(versionString);
 
         // Validation of the product
-        ProductType productDB = productTypeRepository.findById(productId).orElse(null);
+        ProductType productDB = productTypeRepository.findOne(productId);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -186,7 +186,7 @@ public class ProductService {
     // Validate device IDs in the request
     private void validateDeviceIds(List<String> deviceIds) {
         for (String deviceId : deviceIds) {
-            Device device = deviceRepository.findById(deviceId).orElse(null);
+            Device device = deviceRepository.findOne(deviceId);
             if (device == null) {
                 throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
             }
@@ -212,7 +212,7 @@ public class ProductService {
         ProductVersion versionFromRequest = parseProductVersion(versionString);
 
         // Validation of the product
-        ProductType productDB = productTypeRepository.findById(productId).orElse(null);
+        ProductType productDB = productTypeRepository.findOne(productId);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -301,7 +301,7 @@ public class ProductService {
     public ProductType findProduct(String productId) {
         logger.debug("GET Request to find a product, product id:{}", productId);
 
-        ProductType productDB = productTypeRepository.findById(productId).orElse(null);
+        ProductType productDB = productTypeRepository.findOne(productId);
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
@@ -385,7 +385,7 @@ public class ProductService {
             }
         }
 
-        ProductType product = productTypeRepository.findById(productId).orElse(null);
+        ProductType product = productTypeRepository.findOne(productId);
         if (product == null) {
             logger.error("Invalid product ID: {}", productId);
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
@@ -412,14 +412,14 @@ public class ProductService {
                     d.setProduct(productData);
                 }
             }
-            deviceRepository.saveAll(allDevices);
+            deviceRepository.save(allDevices);
         }
         return productTypeRepository.save(product);
     }
 
 
     private void sendMessageToDevice(String deviceId, String versionNumber, String productId, String dataFormat, String firstIdentifier, String firstMessage,String secondaryIdentifier, String secondaryMessage) {
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         boolean retained = !"JSON".equalsIgnoreCase(dataFormat);
 
         if (device != null) {
@@ -453,7 +453,7 @@ public class ProductService {
             try {
                 mqttGateway.send(topic, retained, messageToSend);
                 changeTestResultsOfDeviceInsideVersion(productId, versionNumber, deviceId, TestResult.PENDING);
-                Message existingMessage = messageRepository.findById(deviceId + "-" + (maxTopicNumber + 1)).orElse(null);
+                Message existingMessage = messageRepository.findOne(deviceId + "-" + (maxTopicNumber + 1));
                 if (existingMessage != null) {
                     existingMessage.setPayload(messageToSend);
                     messageRepository.save(existingMessage);
@@ -486,7 +486,7 @@ public class ProductService {
         }
 
         // Retrieve the product information from the database
-        ProductType productDB = productTypeRepository.findById(productId).orElse(null);
+        ProductType productDB = productTypeRepository.findOne(productId);
         String dataFormat = productDB.getDataFormat();
         if (productDB == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
@@ -500,7 +500,7 @@ public class ProductService {
 
         // Iterate through the list of affected devices and perform necessary updates
         for (String deviceId : deviceIds) {
-            Device device = deviceRepository.findById(deviceId).orElse(null);
+            Device device = deviceRepository.findOne(deviceId);
             if (device != null) {
                 // Retrieve product data for the device
                 ProductData productData = device.getProduct();
@@ -582,7 +582,7 @@ public class ProductService {
             return;
         }
 
-        ProductType productDB = productTypeRepository.findById(productId).orElse(null);
+        ProductType productDB = productTypeRepository.findOne(productId);
         String dataFormat = productDB.getDataFormat();
 
         if (productDB == null) {
@@ -611,7 +611,7 @@ public class ProductService {
         //Update Device's Product details and send Message
         for (String deviceId : deviceIds) {
 
-            Device device = deviceRepository.findById(deviceId).orElse(null);
+            Device device = deviceRepository.findOne(deviceId);
             if (device != null) {
 
                 if (device.getProduct() == null) {
@@ -736,7 +736,7 @@ public class ProductService {
     }
 
     public void changeTestResultsOfDeviceInsideVersion(String productId, String version, String deviceId, TestResult result) {
-        ProductType product = productTypeRepository.findById(productId).orElse(null);
+        ProductType product = productTypeRepository.findOne(productId);
         if (product == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
         }
@@ -780,7 +780,7 @@ public class ProductService {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
         String IMEIId=device.getId();
-        ProductData product = productDataRepository.findById(IMEIId).orElse(null);
+        ProductData product = productDataRepository.findOne(IMEIId);
         if(!upgradeSuccess){
             product.setCurrentVersionStatus(UpdateStatus.FAILED.toString());
             productDataRepository.save(product);
@@ -797,7 +797,7 @@ public class ProductService {
         logger.debug("Current Version Number:{} ", product.getCurrentProductVersion());
 
         // Retrieve the list of versions associated with the product
-        List<ProductVersion> versions = productTypeRepository.findById(product.getProductId()).orElse(null).getVersions();
+        List<ProductVersion> versions = productTypeRepository.findOne(product.getProductId()).getVersions();
         ProductVersion currentVersion = versions.stream()
                 .filter(version -> version.getVersionNum().equals(product.getCurrentProductVersion()))
                 .collect(Collectors.toList()).get(0);
@@ -966,7 +966,7 @@ public class ProductService {
     }
 
     public ProductType updateProductType(String productTypeId, ProductTypeDTO productTypeDTO) {
-        ProductType requestedProductType = productTypeRepository.findById(productTypeId).orElse(null);
+        ProductType requestedProductType = productTypeRepository.findOne(productTypeId);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
@@ -987,7 +987,7 @@ public class ProductService {
                 ProductData product =device.getProduct();
                 product.setProductType(productTypeDTO.getProductName());
             });
-            deviceRepository.saveAll(deviceswithProductType);
+            deviceRepository.save(deviceswithProductType);
             requestedProductType.setProductName(productTypeDTO.getProductName());
         }
         if(productTypeDTO.isPersistence()!=null){
@@ -1080,7 +1080,7 @@ public class ProductService {
     }
 
     public ProductType getOneProductTypeById(String productTypeId) {
-        ProductType requestedProductType = productTypeRepository.findById(productTypeId).orElse(null);
+        ProductType requestedProductType = productTypeRepository.findOne(productTypeId);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
@@ -1088,12 +1088,12 @@ public class ProductService {
     }
 
     public String deleteOneProductType(String productTypeId) {
-        ProductType requestedProductType = productTypeRepository.findById(productTypeId).orElse(null);
+        ProductType requestedProductType = productTypeRepository.findOne(productTypeId);
         if (requestedProductType == null) {
             throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
         }
 
-        productTypeRepository.deleteById(productTypeId);
+        productTypeRepository.delete(productTypeId);
         return "Success";
     }
 

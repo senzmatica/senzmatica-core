@@ -1,12 +1,12 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.entity.Http_acl_auth;
-import com.magma.dmsdata.data.entity.Vmq_acl_auth;
+import com.magma.core.data.entity.Http_acl_auth;
+import com.magma.core.data.entity.Vmq_acl_auth;
 import com.magma.core.data.repository.Http_acl_authRepository;
 import com.magma.core.data.repository.Vmq_acl_authRepository;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
-import com.magma.dmsdata.util.UpdatableBCrypt;
+import com.magma.core.util.MagmaException;
+import com.magma.core.util.MagmaStatus;
+import com.magma.core.util.UpdatableBCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ public class VerneMqService {
     }
 
     public Vmq_acl_auth getVmqAclOneClient(String vernemqId) {
-        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(vernemqId).orElse(null);
+        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findOne(vernemqId);
         if (vmq_acl_auth == null) {
             throw new MagmaException(MagmaStatus.CLIENT_NOT_FOUND);
         }
@@ -56,18 +56,18 @@ public class VerneMqService {
 
 
     public String deleteVernemq(String vernemqId) {
-        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(vernemqId).orElse(null);
+        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findOne(vernemqId);
 
         if (vmq_acl_auth.isProtect()) {
             throw new MagmaException(MagmaStatus.DATA_PROTECTED);
         }
-        vmq_acl_authRepository.deleteById(vernemqId);
+        vmq_acl_authRepository.delete(vernemqId);
         return "The record id " + vernemqId + " has been successfully deleted";
     }
 
     public Vmq_acl_auth updateVernemq(String vernemqId, Vmq_acl_auth updatedVernemq) {
 
-        Vmq_acl_auth vmqAclAuth = vmq_acl_authRepository.findById(vernemqId).orElse(null);
+        Vmq_acl_auth vmqAclAuth = vmq_acl_authRepository.findOne(vernemqId);
 
         if (vmqAclAuth.isProtect()) {
             throw new MagmaException(MagmaStatus.DATA_PROTECTED);
@@ -153,7 +153,7 @@ public class VerneMqService {
     }
 
     public Vmq_acl_auth updateMqttProtection(String clientId, boolean protect) {
-        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findById(clientId).orElse(null);
+        Vmq_acl_auth vmq_acl_auth = vmq_acl_authRepository.findOne(clientId);
         if (vmq_acl_auth == null) {
             throw new MagmaException(MagmaStatus.ERROR);
         }

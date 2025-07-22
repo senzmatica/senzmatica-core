@@ -11,17 +11,44 @@ import java.util.List;
 public class ThirdPartyAuthServiceUms extends ThirdPartyAuthService {
 
     @Override
+    public String createAccount(User arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'createAccount'");
+    }
+
+    @Override
+    public String createCorporate(User arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'createCorporate'");
+    }
+
+    @Override
+    public void deleteAccount(String arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deleteAccount'");
+    }
+
+    @Override
     public User getUser(AuthType arg0, String arg1) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getUser'");
     }
 
     @Override
+    public List<String> getUserRefs(AuthType arg0, String arg1, List<Integer> arg2) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserRefs'");
+    }
+
+    @Override
     public List<String> getUserRefs(AuthType arg0, String arg1, Integer arg2) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getUserRefs'");
     }
 
     @Override
     public boolean isValid(AuthType arg0, String arg1) {
+        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'isValid'");
     }
 }

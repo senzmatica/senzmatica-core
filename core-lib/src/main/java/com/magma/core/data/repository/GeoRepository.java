@@ -1,7 +1,7 @@
 package com.magma.core.data.repository;
 
-import com.magma.dmsdata.data.entity.Geo;
-import com.magma.dmsdata.data.support.GeoType;
+import com.magma.core.data.entity.Geo;
+import com.magma.core.data.support.GeoType;
 import org.joda.time.DateTime;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

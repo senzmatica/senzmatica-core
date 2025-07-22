@@ -1,8 +1,8 @@
 package com.magma.core.data.repository;
 
-import com.magma.dmsdata.data.entity.DeviceMaintenance;
-import com.magma.dmsdata.data.entity.Property;
-import com.magma.dmsdata.data.entity.Sensor;
+import com.magma.core.data.entity.DeviceMaintenance;
+import com.magma.core.data.entity.Property;
+import com.magma.core.data.entity.Sensor;
 import org.joda.time.DateTime;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;

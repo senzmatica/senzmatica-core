@@ -1,6 +1,7 @@
 package com.magma.ums.Impl;
 
 import com.magma.ums.util.ReferenceEntity;
+import com.magma.ums.data.entity.User;
 import com.magma.ums.service.ReferenceEntityService;
 import org.springframework.stereotype.Service;
 
@@ -10,22 +11,50 @@ import java.util.List;
 public class ReferenceEntityServiceUms extends ReferenceEntityService {
 
     @Override
-    public ReferenceEntity findReferenceById(String var1, String var2) {
-        return null;
+    public List<ReferenceEntity> findAllReferencesCanAssignTo(Integer arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findAllReferencesCanAssignTo'");
     }
 
     @Override
-    public List<ReferenceEntity> findAllReferencesCanAssignTo(Integer var1) {
-        return null;
+    public ReferenceEntity findReferenceById(String arg0, String arg1) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findReferenceById'");
     }
 
     @Override
-    public List<ReferenceEntity> findReferencesOf(String var1) {
-        return null;
+    public List<ReferenceEntity> findReferencesOf(String arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findReferencesOf'");
     }
 
     @Override
-    public boolean validateReference(Integer integer, List<String> list) {
-        return false;
+    public List<String> getCorporateIdsOfAccounts(List<String> arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getCorporateIdsOfAccounts'");
+    }
+
+    @Override
+    public List<String> getLevelFiveIdsOfLevelFour(List<String> arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getLevelFiveIdsOfLevelFour'");
+    }
+
+    @Override
+    public List<String> getLevelFourIdsOfCorporates(List<String> arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getLevelFourIdsOfCorporates'");
+    }
+
+    @Override
+    public List<User> getUsersOfReferences(List<String> arg0) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUsersOfReferences'");
+    }
+
+    @Override
+    public boolean validateReference(Integer arg0, List<String> arg1) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'validateReference'");
     }
 }

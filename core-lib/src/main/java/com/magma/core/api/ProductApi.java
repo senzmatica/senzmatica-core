@@ -1,16 +1,16 @@
 package com.magma.core.api;
 
-import com.magma.dmsdata.data.dto.ProductDTO;
-import com.magma.dmsdata.data.dto.ProductTypeDTO;
-import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.data.entity.ProductType;
+import com.magma.core.data.dto.ProductDTO;
+import com.magma.core.data.dto.ProductTypeDTO;
+import com.magma.core.data.entity.Device;
+import com.magma.core.data.entity.ProductType;
 import com.magma.core.data.repository.ProductTypeRepository;
-import com.magma.dmsdata.data.support.RemoteConfigField;
-import com.magma.dmsdata.data.support.SetupSenzmatica;
+import com.magma.core.data.support.RemoteConfigField;
+import com.magma.core.data.support.SetupSenzmatica;
 import com.magma.core.service.ProductService;
 import com.magma.core.service.UserFavouriteService;
-import com.magma.dmsdata.util.ProductStatus;
-import com.magma.dmsdata.validation.BadRequestException;
+import com.magma.core.util.ProductStatus;
+import com.magma.core.validation.BadRequestException;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;

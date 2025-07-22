@@ -1,6 +1,6 @@
 package com.magma.core.data.repository;
 
-import com.magma.dmsdata.data.entity.Device;
+import com.magma.core.data.entity.Device;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;

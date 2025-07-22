@@ -1,6 +1,6 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.support.UserInfo;
+import com.magma.core.data.support.UserInfo;
 import org.springframework.stereotype.Service;
 
 @Service("userConnectorService")

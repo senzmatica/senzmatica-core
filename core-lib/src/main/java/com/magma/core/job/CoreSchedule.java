@@ -3,11 +3,11 @@ package com.magma.core.job;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.data.entity.Offline;
-import com.magma.dmsdata.data.entity.Sensor;
+import com.magma.core.data.entity.Device;
+import com.magma.core.data.entity.Offline;
+import com.magma.core.data.entity.Sensor;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.DeviceSummary;
+import com.magma.core.data.support.DeviceSummary;
 import com.magma.core.service.DeviceMaintenanceService;
 import com.magma.core.service.KitCoreService;
 import com.magma.util.MagmaTime;
@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -167,10 +168,10 @@ public class CoreSchedule {
                 continue;
             }
             List<Sensor> deviceHistory = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                    new String(device.getId()), 0, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
-            List<Sensor> batteryHistory = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                    new String(device.getId()), batteryPropertyNumber, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
+                    new String(device.getId()), 0, new PageRequest(0, countAnalyseDeviceSummary.intValue()));
 
+            List<Sensor> batteryHistory = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
+                    new String(device.getId()), batteryPropertyNumber, new PageRequest(0, countAnalyseDeviceSummary.intValue()));
 
             DateTime now = MagmaTime.now();
             if (device.getLastSeen() == null) {
@@ -255,7 +256,7 @@ public class CoreSchedule {
                 boolean isAnySensorOfDeviceFailure = false;
                 for (i = 0; i < device.getSensorCodes().length && !isAnySensorOfDeviceFailure; i++) {
                     List<Sensor> deviceHistoryX = sensorRepository.findByDeviceIdAndNumberOrderByTimeDesc(
-                            new String(device.getId()), i, org.springframework.data.domain.PageRequest.of(0, countAnalyseDeviceSummary));
+                            new String(device.getId()), i, new PageRequest(0, countAnalyseDeviceSummary));
                     List<Double> sensorFailureValueX = sensorFailureValues.get(device.getSensorCodes()[i]);
                     int estimatorSensorFailure = 0;
 

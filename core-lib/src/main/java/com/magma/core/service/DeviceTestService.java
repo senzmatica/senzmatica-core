@@ -1,9 +1,9 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.TestResult;
-import com.magma.dmsdata.util.*;
+import com.magma.core.data.support.TestResult;
+import com.magma.core.util.*;
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.MongoCollection;
 import org.bson.Document;
@@ -52,7 +52,7 @@ public class DeviceTestService {
     public List<String> getAllDevicesBatchNumbers() {
         logger.debug("Get All Batch Numbers available in the system");
         Query query = new Query();
-        Sort sort = Sort.by(Sort.Direction.DESC, "creationDate");
+        Sort sort = new Sort(Sort.Direction.DESC, "creationDate");
         query.with(sort);
 
         List<Device> devices = mongoTemplate.find(query, Device.class, "device");
@@ -78,7 +78,7 @@ public class DeviceTestService {
 
     //Assign batch number to a device
     public Device configureBatchNumber(String deviceId, String batchNumber) {
-        Device deviceDB = deviceRepository.findById(deviceId).orElse(null);
+        Device deviceDB = deviceRepository.findOne(deviceId);
         String regex = "(?=.*[a-zA-Z])(?=.*[0-9])[A-Za-z0-9]+";
         Pattern p = Pattern.compile(regex);
         Matcher m = p.matcher(batchNumber);
@@ -158,7 +158,7 @@ public class DeviceTestService {
     public List<Device> updateDevice(String batchNumber, List<String> deviceIds, String referenceId) {
         List<Device> devices = new ArrayList<>();
         deviceIds.forEach(deviceId -> {
-            Device device = deviceRepository.findById(deviceId).orElse(null);
+            Device device = deviceRepository.findOne(deviceId);
             if(device.getBatchNumber() == null && device.getReferenceId().equals(referenceId)){
                 device.setBatchNumber(batchNumber);
                 devices.add(device);

@@ -1,16 +1,16 @@
 package com.magma.core.api;
 
 import com.magma.core.service.DataProcessorService;
-import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.data.entity.MagmaCodec;
-import com.magma.dmsdata.data.dto.MagmaCodecDTO;
+import com.magma.core.data.entity.Device;
+import com.magma.core.data.entity.MagmaCodec;
+import com.magma.core.data.dto.MagmaCodecDTO;
 import com.magma.core.service.MagmaCodecService;
 import com.magma.util.MagmaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.validation.BindingResult;
-import com.magma.dmsdata.validation.BadRequestException;
+import com.magma.core.validation.BadRequestException;
 
 import java.util.List;
 import javax.validation.Valid;

@@ -1,6 +1,6 @@
 package com.magma.core.data.repository;
 
-import com.magma.dmsdata.data.entity.SensorCode;
+import com.magma.core.data.entity.SensorCode;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;

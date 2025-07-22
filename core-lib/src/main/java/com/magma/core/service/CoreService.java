@@ -5,17 +5,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.dmsdata.data.dto.*;
-import com.magma.dmsdata.data.entity.Error;
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.dto.*;
+import com.magma.core.data.entity.Error;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.*;
+import com.magma.core.data.support.*;
 import com.magma.core.grpc.PredictionInput;
 import com.magma.core.grpc.PredictionInputs;
 import com.magma.core.grpc.PredictionOutputs;
 import com.magma.core.grpc.SensorPredict;
 import com.magma.core.job.CoreSchedule;
-import com.magma.dmsdata.util.*;
+import com.magma.core.util.*;
 import com.magma.util.MagmaTime;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -130,7 +130,7 @@ public class CoreService {
         LOGGER.debug("Update Device's Remote Configurations for Device Id: {}", deviceId);
 
         // Retrieve the requested device from the repository
-        Device requestedDevice = deviceRepository.findById(deviceId).orElse(null);
+        Device requestedDevice = deviceRepository.findOne(deviceId);
 
         // Check if the device exists
         if (requestedDevice == null) {
@@ -217,8 +217,7 @@ public class CoreService {
                                     // Find the corresponding parameter in the new remote configurations
                                     RemoteConfigField parameter = newRemoteConfigurations.stream()
                                             .filter(p -> id.equals(p.getParameterId()))
-                                            .findFirst()
-                                            .orElse(null);
+                                            .findFirst().orElse(null);
 
                                     // Populate maps based on parameter category
                                     if (parameter != null) {
@@ -253,7 +252,7 @@ public class CoreService {
                             his.setUpdateStatus(UpdateStatus.PENDING);
                             String msgId;
                             // Find existing message or create a new one
-                            Message existingMessage = messageRepository.findById(deviceId + "-" + String.valueOf(maxTopicNumber + i + 1)).orElse(null);
+                            Message existingMessage = messageRepository.findOne(deviceId + "-" + String.valueOf(maxTopicNumber + i + 1));
                             if (existingMessage != null) {
                                 existingMessage.setUpdateHistory(his);
                                 existingMessage.setPayload(messageChunks.get(i));
@@ -298,8 +297,7 @@ public class CoreService {
                                 // Find the corresponding parameter in the new remote configurations
                                 RemoteConfigField parameter = newRemoteConfigurations.stream()
                                         .filter(p -> id.equals(p.getParameterId()))
-                                        .findFirst()
-                                        .orElse(null);
+                                        .findFirst().orElse(null);
 
                                 // Populate maps based on parameter category
                                 if (parameter != null) {
@@ -332,7 +330,7 @@ public class CoreService {
                         String msgId;
 
                         // Find existing message or create a new one
-                        Message existingMessage = messageRepository.findById(deviceId + "-" + String.valueOf(maxTopicNumber  + 1)).orElse(null);
+                        Message existingMessage = messageRepository.findOne(deviceId + "-" + String.valueOf(maxTopicNumber  + 1));
                         if (existingMessage != null) {
                             existingMessage.setUpdateHistory(his);
                             existingMessage.setPayload(completeMessage);
@@ -583,7 +581,7 @@ public class CoreService {
             // Retrieve the system message object based on device ID and topic number
             String deviceId=currentDevice.getId();
             String messageId = deviceId + "-" + topicNumber;//message is saved with imei id and topic
-            Message messageObject = messageRepository.findById(messageId).orElse(null);
+            Message messageObject = messageRepository.findOne(messageId);
             String message = messageObject.getPayload();
             LOGGER.debug("Message: {}", message);
 
@@ -646,7 +644,7 @@ public class CoreService {
 
             String deviceId=currentDevice.getId();   //message is saved with imei id and topic
             String messageId = deviceId + "-" + topicNumber;
-            Message messageObject = messageRepository.findById(messageId).orElse(null);
+            Message messageObject = messageRepository.findOne(messageId);
 
             List<DeviceParameterConfigurationHistory> history=current.getUpdateHistory();
             Optional<DeviceParameterConfigurationHistory> matchedHistory = history.stream()
@@ -1246,8 +1244,8 @@ public class CoreService {
     }
 
     public Property changeLabel(String deviceId, String label, String propertyId) {
-        Property property = propertyRepository.findById(propertyId).orElse(null);
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Property property = propertyRepository.findOne(propertyId);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null || property == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
@@ -1257,19 +1255,19 @@ public class CoreService {
     }
 
     public List<Property> changePropertyLabels(String deviceId, List<PropertyDTO> propertyDTOS) {
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
         for (PropertyDTO propertyDTO : propertyDTOS) {
-            Property propertyDB = propertyRepository.findById(propertyDTO.getId()).orElse(null);
+            Property propertyDB = propertyRepository.findOne(propertyDTO.getId());
             if (propertyDB == null) {
                 throw new MagmaException(MagmaStatus.INVALID_INPUT);
             }
         }
         List<Property> labelChangedProperties = new ArrayList<>();
         for (PropertyDTO propertyDTO : propertyDTOS) {
-            Property property = propertyRepository.findById(propertyDTO.getId()).orElse(null);
+            Property property = propertyRepository.findOne(propertyDTO.getId());
             property.setLabel(propertyDTO.getLabel());
             propertyRepository.save(property);
             labelChangedProperties.add(property);
@@ -1278,7 +1276,7 @@ public class CoreService {
     }
 
     public List<Sensor> changeSensorLabels(String deviceId, SensorChangeRequestDTO SensorChangeRequestDTO) {
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null) {
             throw new MagmaException(MagmaStatus.INVALID_INPUT);
         }
@@ -1286,14 +1284,14 @@ public class CoreService {
         List<SensorCodeDTO> SensorCodeDTOs = SensorChangeRequestDTO.getSensorCodeDTOS();
 
         for (SensorDTO sensorDTO : sensorDTOs) {
-            Sensor sensorDB = sensorRepository.findById(sensorDTO.getId()).orElse(null);
+            Sensor sensorDB = sensorRepository.findOne(sensorDTO.getId());
             if (sensorDB == null) {
                 throw new MagmaException(MagmaStatus.INVALID_INPUT);
             }
         }
         List<Sensor> labelChangedSensors = new ArrayList<>();
         for (SensorDTO sensorDTO : sensorDTOs) {
-            Sensor sensor = sensorRepository.findById(sensorDTO.getId()).orElse(null);
+            Sensor sensor = sensorRepository.findOne(sensorDTO.getId());
             DateTime timeCreated = sensor.getTime();
             sensor.setLabel(sensorDTO.getLabel());
             sensorRepository.save(sensor);
@@ -1335,7 +1333,7 @@ public class CoreService {
     }
 
     public Map<String, Protocol> changeConnectivityProtocol(String deviceId, Protocol protocol) {
-        Device deviceDB = deviceRepository.findById(deviceId).orElse(null);
+        Device deviceDB = deviceRepository.findOne(deviceId);
         if (deviceDB == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
@@ -1362,7 +1360,7 @@ public class CoreService {
             if (!statusConfig.containsKey("deviceId") || !statusConfig.containsKey("status")) {
                 throw new MagmaException(MagmaStatus.INVALID_INPUT);
             }
-            Device db = deviceRepository.findById(statusConfig.get("deviceId")).orElse(null);
+            Device db = deviceRepository.findOne(statusConfig.get("deviceId"));
             if (db == null) {
                 throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
             }
@@ -1373,7 +1371,7 @@ public class CoreService {
 
         //Modify Status
         for (Map<String, String> statusConfig : statusConfigs) {
-            Device db = deviceRepository.findById(statusConfig.get("deviceId")).orElse(null);
+            Device db = deviceRepository.findOne(statusConfig.get("deviceId"));
             if (db.getReferences() == null || db.getProtocol() == null) {
                 continue;
             }
@@ -1388,7 +1386,7 @@ public class CoreService {
     public List<Device> configureClients(Map<String, String> configs) {
         List<Device> mod = new ArrayList<>();
         for (String device : configs.keySet()) {
-            Device d = deviceRepository.findById(device).orElse(null);
+            Device d = deviceRepository.findOne(device);
             if (d != null) {
                 mod.add(d);
                 if (d.getReferences() == null) {
@@ -1510,7 +1508,7 @@ public class CoreService {
 
     public Map<String, String> getConnectionDetailsOfDevice(String deviceID) {
         //Validate DeviceID
-        Device deviceDB = deviceRepository.findById(deviceID).orElse(null);
+        Device deviceDB = deviceRepository.findOne(deviceID);
         if (deviceDB == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }

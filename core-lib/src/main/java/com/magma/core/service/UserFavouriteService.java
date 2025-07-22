@@ -1,12 +1,12 @@
 package com.magma.core.service;
 
-import com.magma.dmsdata.data.entity.Device;
-import com.magma.dmsdata.data.entity.ProductType;
-import com.magma.dmsdata.data.entity.UserFavourite;
+import com.magma.core.data.entity.Device;
+import com.magma.core.data.entity.ProductType;
+import com.magma.core.data.entity.UserFavourite;
 import com.magma.core.data.repository.DeviceRepository;
 import com.magma.core.data.repository.UserFavouriteRepository;
-import com.magma.dmsdata.util.MagmaException;
-import com.magma.dmsdata.util.MagmaStatus;
+import com.magma.core.util.MagmaException;
+import com.magma.core.util.MagmaStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +60,7 @@ public class UserFavouriteService {
             userFavourite.setFavouriteDevices(new ArrayList<>());
         }
         //Check Device ID Validation
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
@@ -111,7 +111,7 @@ public class UserFavouriteService {
 
     public void RemoveDeviceAsFavourite(String userId, String deviceId) {
         //Validate DeviceId:
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
         if (device == null) {
             throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
         }
@@ -186,7 +186,7 @@ public class UserFavouriteService {
 
         //Validate DeviceIds
         for (String device : deviceIds) {
-            Device deviceDb = deviceRepository.findById(device).orElse(null);
+            Device deviceDb = deviceRepository.findOne(device);
             if (deviceDb == null) {
                 throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
             }

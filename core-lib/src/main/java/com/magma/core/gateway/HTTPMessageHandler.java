@@ -1,9 +1,8 @@
 package com.magma.core.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.magma.dmsdata.data.support.DataHTTP;
+import com.magma.core.data.support.DataHTTP;
 import com.magma.core.service.DataProcessorService;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,16 +42,14 @@ public class HTTPMessageHandler {
     public String handleMessage(String kit, Object obj) {
         LOGGER.debug("Http Data : {}", obj);
 
-
         ObjectMapper oMapper = new ObjectMapper();
         try {
-            JSONObject jsonObject = new JSONObject(oMapper.writeValueAsString(obj));
+            String jsonString = oMapper.writeValueAsString(obj);
+            LOGGER.debug("Logger Test: {}", jsonString);
 
-            LOGGER.debug("Logger Test:{} ", jsonObject.toString());
-            dataProcessorService.doHandle(kit, jsonObject.toString());
-
-
+            dataProcessorService.doHandle(kit, jsonString);
             return "Success";
+
         } catch (Exception e) {
             LOGGER.error("Exception Got in HTTP : ", e);
             return "Error";

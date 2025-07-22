@@ -1,7 +1,7 @@
 package com.magma.core.configuration;
 
-import com.magma.dmsdata.util.MagmaErrorResponse;
-import com.magma.dmsdata.util.MagmaException;
+import com.magma.core.util.MagmaErrorResponse;
+import com.magma.core.util.MagmaException;
 import com.magma.util.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

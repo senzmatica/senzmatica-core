@@ -3,25 +3,23 @@ package com.magma.core.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.dmsdata.data.dto.PropertyDTO;
-import com.magma.dmsdata.data.entity.Error;
-import com.magma.dmsdata.data.entity.*;
+import com.magma.core.data.dto.PropertyDTO;
+import com.magma.core.data.entity.Error;
+import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
-import com.magma.dmsdata.data.support.Connectivity;
-import com.magma.dmsdata.data.support.GeoType;
-import com.magma.dmsdata.data.support.Operation;
-import com.magma.dmsdata.data.support.Shift;
+import com.magma.core.data.support.Connectivity;
+import com.magma.core.data.support.GeoType;
+import com.magma.core.data.support.Operation;
+import com.magma.core.data.support.Shift;
 import com.magma.core.grpc.Properties;
 import com.magma.core.grpc.*;
-import com.magma.dmsdata.util.*;
+import com.magma.core.util.*;
 import com.magma.util.MagmaTime;
 import com.magma.util.MagmaUtil;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import org.joda.time.DateTime;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -35,7 +33,6 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
-import com.magma.core.grpc.PredictionInputs;
 
 @Service
 public class DataProcessorService {
@@ -107,7 +104,7 @@ public class DataProcessorService {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataProcessorService.class);
 
     public void doHandleConfiguration(String deviceId, String txt) {
-        Device device = deviceRepository.findById(deviceId).orElse(null);
+        Device device = deviceRepository.findOne(deviceId);
 
         if (device == null) {
             LOGGER.error("No Device Found with Device Id : {}", deviceId);
@@ -469,7 +466,7 @@ public class DataProcessorService {
 
         MagmaCodec magmaCodec = null;
         if (magmaCodecId != null) {
-            magmaCodec = magmaCodecRepository.findById(magmaCodecId).orElse(null);
+            magmaCodec = magmaCodecRepository.findOne(magmaCodecId);
         }
 
         if (magmaCodec != null) {
@@ -518,28 +515,28 @@ public class DataProcessorService {
     }
 
     public void doHandleJsonMessages(String deviceId, String txt) {
-        LOGGER.debug("doHandleJsonMessages deviceId :{}, txt :{} ", deviceId, txt);
+        LOGGER.debug("doHandleJsonMessages deviceId: {}, txt: {}", deviceId, txt);
+
+        ObjectMapper objectMapper = new ObjectMapper();
 
         try {
-            JSONArray messageArray = new JSONArray(txt);
-            for (int i = 0; i < messageArray.length(); i++) {
-                JSONObject jsonMessage = messageArray.getJSONObject(i);
+            JsonNode messageArray = objectMapper.readTree(txt);
+            if (messageArray.isArray()) {
+                for (JsonNode jsonMessage : messageArray) {
+                    // Check for "d2" or "e2" fields directly
+                    if (jsonMessage.has("d2")) {
+                        int invId = jsonMessage.get("d2").asInt();
+                        doHandle(deviceId + "_" + invId, jsonMessage.toString());
+                    }
 
-                if (jsonMessage.toString().contains("d2")) {
-                    int invId = jsonMessage.getInt("d2");
-                    doHandle(deviceId + "_" + invId, jsonMessage.toString());
+                    if (jsonMessage.has("e2")) {
+                        int invId = jsonMessage.get("e2").asInt();
+                        doHandle(deviceId + "_" + invId, jsonMessage.toString());
+                    }
                 }
-
-                if (jsonMessage.toString().contains("e2")) {
-                    int invId = jsonMessage.getInt("e2");
-                    doHandle(deviceId + "_" + invId, jsonMessage.toString());
-                }
-
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            LOGGER.error("Exception occurred in doHandleJsonMessages :{} ", e.getMessage());
-            LOGGER.error("Exception occurred in doHandleJsonMessages :", e);
+            LOGGER.error("Exception occurred in doHandleJsonMessages: {}", e.getMessage(), e);
         }
     }
 
