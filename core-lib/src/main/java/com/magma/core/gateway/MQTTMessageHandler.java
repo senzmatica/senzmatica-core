@@ -57,41 +57,6 @@ public class MQTTMessageHandler implements MessageHandler {
 
             if(elements[2].equals("V1")) {
                 switch (elements[elements.length - 1]) {
-                    case "A":
-                        //D2S/SA/V1/{Device_Id}/A
-                        deviceId = elements[elements.length - 2];
-                        DateTime time = MagmaTime.now();
-
-                        //TODO:remove after keerthi fix topic
-                        if (txt.contains("*")) {
-                            String[] els = txt.split("\\*");
-                            txt = els[1];
-                            dataProcessorService.doHandle(deviceId, els[0]);
-                            time = dataProcessorService.pastDataTime(els[0]);
-                        }
-                        ////
-
-//                        dataProcessorService.doHandleActuators(deviceId, txt, time);
-                        break;
-
-                    case "S":
-                        //D2S/SA/V1/{Device_Id}/S
-                        deviceId = elements[elements.length - 2];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
-                    case "C":
-                        //D2S/SA/V1/{Device_Id}/S
-                        deviceId = elements[elements.length - 2];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
-                    case "events":
-                        //devices/{Device_Id}/messages/events
-                        deviceId = elements[1];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
                     default:
                         if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )&& (txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received"))) {
                             deviceId = elements[elements.length - 3];
@@ -116,24 +81,13 @@ public class MQTTMessageHandler implements MessageHandler {
                             if (txt.contains("*")) {
                                 String[] els = txt.split("\\*");
                                 txt = els[0];
-//                                dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
+                            //    dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
                             }
                             dataProcessorService.doHandle(deviceId, txt);
                         }
                 }
             } else if(elements[2].equals("V2")) {
-                String nodeId;
-
                 switch (elements[elements.length - 1]) {
-                    case "S":
-                        //D2S/SA/V2/GW/{GateWay_Id}/S
-                        //D2S/SA/V2/GW/{GateWay_Id}/{Node_Id}/S
-                        deviceId = elements[elements.length - 2];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
-                    case "E":
-                    case "W":
                     default:
                         deviceId = elements[elements.length - 2];
                         if(txt.contains("[") && txt.contains("]"))
@@ -144,41 +98,6 @@ public class MQTTMessageHandler implements MessageHandler {
             }
             else {
                 switch (elements[elements.length - 1]) {
-                    case "A":
-                        //D2S/SA/V1/{Device_Id}/A
-                        deviceId = elements[elements.length - 2];
-                        DateTime time = MagmaTime.now();
-
-                        //TODO:remove after keerthi fix topic
-                        if (txt.contains("*")) {
-                            String[] els = txt.split("\\*");
-                            txt = els[1];
-                            dataProcessorService.doHandle(deviceId, els[0]);
-                            time = dataProcessorService.pastDataTime(els[0]);
-                        }
-                        ////
-
-//                        dataProcessorService.doHandleActuators(deviceId, txt, time);
-                        break;
-
-                    case "S":
-                        //D2S/SA/V1/{Device_Id}/S
-                        deviceId = elements[elements.length - 2];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
-                    case "C":
-                        //D2S/SA/V1/{Device_Id}/S
-                        deviceId = elements[elements.length - 2];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
-                    case "events":
-                        //devices/{Device_Id}/messages/events
-                        deviceId = elements[1];
-                        dataProcessorService.doHandle(deviceId, txt);
-                        break;
-
                     default:
                         if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )){
                             if(txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received")) {

@@ -199,72 +199,6 @@ public class DataProcessorService {
 
                 String[] conf = data[0].split(":", 2);
                 switch (conf[0].trim()) {
-                    case "DT":
-                        if (conf[1].equals("0")) {
-                            if (device.getLastSeen() == null) {
-                                LOGGER.debug("Can't Store Past data First : {}, Device : {}", tx, deviceId);
-                                return;
-                            }
-
-                            Integer interval = device.getInterval();
-                            while (device.getLastSeen().plusMinutes(interval).isAfter(tem)) {
-                                LOGGER.debug("Exceed Current Time for Interval : {}, Device : {}", interval, deviceId);
-                                interval /= 2;
-                            }
-                            tem = device.getLastSeen().plusMinutes(interval);
-                            LOGGER.debug("Past Data Found : {}, Discovered Time : {}, Interval : {}, Device : {}", tx, tem, interval, deviceId);
-
-                        } else {
-                            if (conf[1].length() == 7) {
-                                conf[1] = "0" + conf[1];
-                            }
-                            tem = MagmaTime.parsePast(conf[1]);
-                            LOGGER.debug("Past Data Found : {}, Formatted Time : {}, Device : {}", tx, tem, deviceId);
-                        }
-                        break;
-
-                    //ZT:04261803/22|0-T:-46.85;1-H:-6.00;2-IRO:0062/4095/-46.85;3-B:296;4-IT:55;5-SS:00
-                    case "ZT":
-                    case "ZZ":
-                        String[] zt = conf[1].split("/");
-
-                        if (zt[0].length() == 7) {
-                            zt[0] = "0" + zt[0];
-                        }
-                        tem = MagmaTime.parsePast(zt[0]);
-                        tem = tem.plusMinutes(15 * (22 - Integer.parseInt(zt[1])));
-                        LOGGER.debug("Past Data Found : {}, Formatted Time : {}, Device : {}, ZT : {}", tx, tem, deviceId, conf[1]);
-                        break;
-
-                    case "RT":
-                        tem = MagmaTime.parsePastWithSecondIST(conf[1]);
-                        LOGGER.debug("Past Data Found : {}, Formatted Time : {}, Device : {}", tx, tem, deviceId);
-                        break;
-
-                    case "UTC":
-                        tem = MagmaTime.parsePastWithSecondUTC(conf[1]);
-                        LOGGER.debug("Past Data Found : {}, Formatted Time : {}, Device : {}", tx, tem, deviceId);
-                        break;
-
-                    case "DD":
-                        tem = MagmaTime.parseISO8601(conf[1]);
-                        LOGGER.debug("Past Data Found : {}, Formatted Time : {}, Device : {}", tx, tem, deviceId);
-                        break;
-
-                    case "DC":
-                        LOGGER.debug("Configurations Received : {}, Device : {}", tx, deviceId);
-                        for (String confData : tx.split(";")) {
-                            String[] con = tx.split("-", 2);//1-CT:30
-                            String[] tmp = con[1].split(":", 2); //CT:30
-
-                            Configuration configuration = Configuration.valueOf(tmp[0]);
-                            String stringValue = tmp[1];
-                            device.getConfigurations().put(configuration, stringValue);
-                            //TODO: Have to Validate and Sent if not Match
-                        }
-                        device.setLastSeen(tem);
-                        deviceRepository.save(device);
-                        return;
                     default:
                         LOGGER.debug("Some other format : {} Received : {}, Device : {}", conf[0], tx, deviceId);
 
@@ -292,30 +226,6 @@ public class DataProcessorService {
 
                 LOGGER.debug("code: {}, sens stringValue: {}, ", code, stringValue);
                 switch (code) {
-                    case "ID_IV":
-                    case "RT":
-                        break;
-                    case "ID_MSG":
-                    case "S_U":
-                        if (txt.contains("EF")) {
-                            mapProperties = false;
-                            DeviceMaintenance deviceMaintenance = deviceMaintenanceRepository.save(new DeviceMaintenance(deviceId, sensorNumber, code, time, stringValue));
-                            deviceMaintenanceMap.put(sensorNumber, deviceMaintenance);
-                        } else {
-                            DateTime time1 = null;
-                            if(azureTime != null) {
-                                time1 = azureTime;
-                            } else{
-                                time1 = time;
-                            }
-                            Sensor sensor = sensorRepository.save(new Sensor(deviceId, sensorNumber, code, time1, stringValue, device.getShiftMap().get(sensorNumber), flag));
-                            sensorMap.put(sensorNumber, sensor);
-                        }
-                        break;
-                    case "EF":
-                        DeviceMaintenance deviceMaintenance = deviceMaintenanceRepository.save(new DeviceMaintenance(deviceId, sensorNumber, code, time, stringValue, device.getShiftMap().get(sensorNumber), flag));
-                        deviceMaintenanceMap.put(sensorNumber, deviceMaintenance);
-                        break;
                     default:
                         DateTime time1 = null;
                         LOGGER.debug("sensor to save: {}, {}, {}", deviceId, code, stringValue);
