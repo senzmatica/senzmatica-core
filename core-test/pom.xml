@@ -24,9 +24,15 @@
 
         <dependency>
             <groupId>com.magma.core</groupId>
-            <artifactId>core-service</artifactId>
+            <artifactId>core-lib</artifactId>
             <version>${magma.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.magma.core</groupId>
+            <artifactId>core-data</artifactId>
+            <version>${magma.version}</version>
+        </dependency>
+        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

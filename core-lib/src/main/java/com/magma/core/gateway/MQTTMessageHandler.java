@@ -18,123 +18,106 @@ public class MQTTMessageHandler implements MessageHandler {
     DataProcessorService dataProcessorService;
 
     @Autowired
-    ProductService productService;
+    CoreService coreService;
 
     @Autowired
-    CoreService coreService;
+    ProductService productService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MQTTMessageHandler.class);
 
-
     @Override
     public void handleMessage(Message<?> mqttMessage) {
-        if (RequestIdUtil.getRequestId() == null) {
-            RequestIdUtil.generateRequestId();
-        }
+        RequestIdUtil.generateRequestId();
 
         try {
-            String txt = mqttMessage.getPayload().toString(); //as updated with codec dynamic it should be Object type
+            String txt = mqttMessage.getPayload().toString();
             String topic = mqttMessage.getHeaders().get("mqtt_topic").toString();
 
-            //POLAR OLD TOPICS
-            //devices/{Device_Id}/messages/events
-            //SenzMate/D2S/{Device_Id}
-            //SenzMate/D2S/{Device_Id}/A
-            //SenzMate/S2M/{Device_Id}
+            LOGGER.debug("Received Message. Topic: {}, Message: {}", topic, txt);
 
-            //New Topics V1
-            //Topic : D2S/SA/V1/{IMEI}/S/0  Data : 30 or DT:202012|30
-            //Topic : D2S/SA/V1/{IMEI}/S    Data : 0-T:30;1-H:40 or DT:202012|0-T:30;1-H:40
-            //Topic : D2S/SA/V1/{IMEI}/A    Data : 0-V:0;1-S:1 or DT:202012|0-V:0;1-S:1
-            //Topic : D2S/SA/V1/{IMEI}      Data : 0-T:30;1-H:40*0-V:0;1-S:1 or DT:202012|0-T:30;1-H:40*0-V:0;1-S:1
+            String messageType = identifyMessageType(topic, txt);
 
-            LOGGER.debug("Topic : {}, Message : {}", topic, txt);
-
-
-            String[] elements = topic.split("/");
-
-            String deviceId;
-
-            if(elements[2].equals("V1")) {
-                switch (elements[elements.length - 1]) {
-                    default:
-                        if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )&& (txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received"))) {
-                            deviceId = elements[elements.length - 3];
-                            String topicNumber = elements[elements.length - 1];
-                            coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);
-                        }
-                        else if(txt.contains("rm-conf-unsuccessful")||(txt.contains("rm-conf-partial-successful"))){
-                            deviceId = elements[elements.length - 3];
-                            String topicNumber = elements[elements.length - 1];
-                            coreService.doHandleDeviceConfigFailure(deviceId, topicNumber,txt);
-                        }
-                        else if (txt.contains("Bootloader operation successful") || txt.contains("FUOTA Operation Success")) {
-                            deviceId = elements[elements.length - 1];
-                            productService.doHandleProductVersionUpdates(deviceId,true);
-                        }
-                        else if (txt.contains("Bootloader operation failed") ) {
-                            deviceId = elements[elements.length - 1];
-                            productService.doHandleProductVersionUpdates(deviceId,false);
-                        }
-                        else {
-                            deviceId = elements[elements.length - 1];
-                            if (txt.contains("*")) {
-                                String[] els = txt.split("\\*");
-                                txt = els[0];
-                            //    dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
-                            }
-                            dataProcessorService.doHandle(deviceId, txt);
-                        }
-                }
-            } else if(elements[2].equals("V2")) {
-                switch (elements[elements.length - 1]) {
-                    default:
-                        deviceId = elements[elements.length - 2];
-                        if(txt.contains("[") && txt.contains("]"))
-                            dataProcessorService.doHandleJsonMessages(elements[4], txt);
-                        else
-                            dataProcessorService.doHandle(deviceId, txt);
-                }
-            }
-            else {
-                switch (elements[elements.length - 1]) {
-                    default:
-                        if ((elements[elements.length - 2].equals("C") || elements[elements.length - 2].equals("RM_CONFIG") )){
-                            if(txt.contains("rm-conf-successful") || txt.contains("Remote Configuration Message Successfully received")) {
-                                deviceId = elements[elements.length - 3];
-                                String topicNumber = elements[elements.length - 1];
-                                coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);}
-                            else if(txt.contains("rm-conf-unsuccessful")||(txt.contains("rm-conf-partial-successful"))){
-                                deviceId = elements[elements.length - 3];
-                                String topicNumber = elements[elements.length - 1];
-                                coreService.doHandleDeviceConfigFailure(deviceId, topicNumber,txt);
-                            }
-                        }
-                        else if (txt.contains("Bootloader operation successful") || txt.contains("FUOTA Operation Success")) {
-                            deviceId = elements[elements.length - 1];
-                            productService.doHandleProductVersionUpdates(deviceId,true);
-                        }
-                        else if (txt.contains("Bootloader operation failed") ) {
-                            deviceId = elements[elements.length - 1];
-                            productService.doHandleProductVersionUpdates(deviceId,false);
-                        } else {
-                            deviceId = elements[elements.length - 1];
-                            if (txt.contains("*")) {
-                                String[] els = txt.split("\\*");
-                                txt = els[0];
-//                                dataProcessorService.doHandleActuators(deviceId, els[1], dataProcessorService.pastDataTime(els[0]));
-                            }
-                            dataProcessorService.doHandle(deviceId, txt);
-                        }
-                }
-            }
+            processMessage(messageType, topic, txt);
 
         } catch (Exception e) {
-            e.printStackTrace(); //adding this so that we can get more detailed error
-
-            LOGGER.error("Exception Got in MQTT :", e);
+            e.printStackTrace();
+            LOGGER.error("Exception in MQTT Message Handler: ", e);
         }
     }
 
+    private String identifyMessageType(String topic, String messageContent) {
+        if (topic.contains("V1")) {
+            return "V1";
+        } else if (topic.contains("V2")) {
+            return "V2";
+        } else if (messageContent.contains("rm-conf-successful")) {
+            return "CONFIGURATION";
+        } else if (messageContent.contains("Bootloader operation")) {
+            return "PRODUCT_UPDATE";
+        } else {
+            return "UNKNOWN";
+        }
+    }
 
+    private void processMessage(String messageType, String topic, String messageContent) {
+        switch (messageType) {
+            case "V1":
+                handleV1Message(topic, messageContent);
+                break;
+            case "V2":
+                handleV2Message(topic, messageContent);
+                break;
+            case "CONFIGURATION":
+                handleConfigurationUpdate(topic, messageContent);
+                break;
+            case "PRODUCT_UPDATE":
+                handleProductUpdate(topic, messageContent);
+                break;
+            default:
+                LOGGER.warn("Unknown message type for Topic: {}, Message: {}", topic, messageContent);
+        }
+    }
+
+    private void handleV1Message(String topic, String messageContent) {
+        String[] elements = topic.split("/");
+        String deviceId = elements[elements.length - 1];
+
+        if (messageContent.contains("*")) {
+            String[] parts = messageContent.split("\\*");
+            dataProcessorService.doHandle(deviceId, parts[0]);
+            DateTime time = dataProcessorService.pastDataTime(parts[0]);
+            dataProcessorService.doHandleActuators(deviceId, parts[1], time);
+        } else {
+            dataProcessorService.doHandle(deviceId, messageContent);
+        }
+    }
+
+    private void handleV2Message(String topic, String messageContent) {
+        String[] elements = topic.split("/");
+        String deviceId = elements[elements.length - 2];
+        dataProcessorService.doHandle(deviceId, messageContent);
+    }
+
+    private void handleConfigurationUpdate(String topic, String messageContent) {
+        String[] elements = topic.split("/");
+        String deviceId = elements[elements.length - 3];
+        String topicNumber = elements[elements.length - 1];
+
+        if (messageContent.contains("rm-conf-successful") || messageContent.contains("Remote Configuration Message Successfully received")) {
+            coreService.doHandleDeviceConfigurationUpdates(deviceId, topicNumber);
+        } else if (messageContent.contains("rm-conf-unsuccessful") || messageContent.contains("rm-conf-partial-successful")) {
+            coreService.doHandleDeviceConfigFailure(deviceId, topicNumber, messageContent);
+        }
+    }
+
+    private void handleProductUpdate(String topic, String messageContent) {
+        String[] elements = topic.split("/");
+        String deviceId = elements[elements.length - 1];
+
+        if (messageContent.contains("Bootloader operation successful") || messageContent.contains("FUOTA Operation Success")) {
+            productService.doHandleProductVersionUpdates(deviceId, true);
+        } else if (messageContent.contains("Bootloader operation failed")) {
+            productService.doHandleProductVersionUpdates(deviceId, false);
+        }
+    }
 }

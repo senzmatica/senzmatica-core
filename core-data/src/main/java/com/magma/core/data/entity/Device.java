@@ -109,6 +109,8 @@ public class Device {
 
     private String lastRawData;
 
+    private String lastRawActuatorData;
+
     private String referenceName;
 
     private Map<String, String> metaData = null;
@@ -132,6 +134,8 @@ public class Device {
     private String remoteConfigAckTopic;
 
     private String referenceId;
+
+    private String productVersion;
 
     public Device() {
     }
@@ -165,6 +169,14 @@ public class Device {
 
     public void setLastRawData(String lastRawData) {
         this.lastRawData = lastRawData;
+    }
+
+    public String getLastRawActuatorData() {
+        return lastRawActuatorData;
+    }
+
+    public void setLastRawActuatorData(String lastRawActuatorData) {
+        this.lastRawActuatorData = lastRawActuatorData;
     }
 
     public String getGroup() {
@@ -539,6 +551,14 @@ public class Device {
         this.referenceId = referenceId;
     }
 
+    public String getProductVersion() {
+        return productVersion;
+    }
+
+    public void setProductVersion(String productVersion) {
+        this.productVersion = productVersion;
+    }
+
     @Override
     public String toString() {
         return "Device{" +
@@ -576,6 +596,7 @@ public class Device {
                 ", codec=" + codec +
                 ", magmaCodecId='" + magmaCodecId + '\'' +
                 ", lastRawData='" + lastRawData + '\'' +
+                ", lastRawActuatorData='" + lastRawActuatorData + '\'' +
                 ", referenceName='" + referenceName + '\'' +
                 ", metaData=" + metaData +
                 ", createdBy=" + createdBy +
@@ -587,6 +608,7 @@ public class Device {
                 ", remoteConfigTopic='" + remoteConfigTopic + '\'' +
                 ", remoteConfigAckTopic='" + remoteConfigAckTopic + '\'' +
                 ", referenceId='" + referenceId + '\'' +
+                ", productVersion='" + productVersion + '\'' +
                 '}';
     }
 }

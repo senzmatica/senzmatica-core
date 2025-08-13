@@ -3,22 +3,13 @@ package com.magma.core.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.configuration.MQTTConfiguration;
-import com.magma.core.data.dto.PropertyDTO;
-import com.magma.core.data.entity.Error;
 import com.magma.core.data.entity.*;
 import com.magma.core.data.repository.*;
 import com.magma.core.data.support.Connectivity;
-import com.magma.core.data.support.GeoType;
-import com.magma.core.data.support.Operation;
-import com.magma.core.data.support.Shift;
-import com.magma.core.grpc.Properties;
 import com.magma.core.grpc.*;
-import com.magma.core.util.*;
 import com.magma.util.MagmaTime;
-import com.magma.util.MagmaUtil;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
@@ -29,8 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
 import javax.annotation.PostConstruct;
 import java.util.*;
 
@@ -41,7 +30,13 @@ public class DataProcessorService {
     DeviceRepository deviceRepository;
 
     @Autowired
+    KitRepository kitRepository;
+
+    @Autowired
     SensorRepository sensorRepository;
+
+    @Autowired
+    SensorCodeRepository sensorCodeRepository;
 
     @Autowired
     PropertyRepository propertyRepository;
@@ -142,7 +137,6 @@ public class DataProcessorService {
     }
 
     public void  doHandle(String deviceIdOrName, String txt) {
-        boolean mapProperties = true;
         Map<Integer, DeviceMaintenance> deviceMaintenanceMap = new HashMap<>();
 
         Device device = deviceRepository.findByIdOrName(deviceIdOrName);
@@ -154,7 +148,7 @@ public class DataProcessorService {
         String deviceId = device.getId();
 
         device.setLastRawData(txt);
-        deviceRepository.save(device);  //storing raw data, can be used for debugging
+        deviceRepository.save(device);
 
         DateTime azureTime = null;
         if(txt.contains("enqueuedTime")){
@@ -173,107 +167,74 @@ public class DataProcessorService {
             LOGGER.debug("Device : {}, Message : {}", deviceId, txt);
         }
 
-        //DT:1231253|0-T:25.63,DT:1231322|0-T:26.06
-        //DC|0-CT:10;1-CK:20
-        //0-T:30;1-H:45
-        if (!txt.contains("|")) {
-            txt = txt.replaceAll("\\s", "");
-            int x = StringUtils.countOccurrencesOf(txt, ";") + 1;
-            while (txt.contains(",")) {
-                txt = txt.replaceFirst(",", ";" + x + "-");
-                x++;
-            }
-        }
+        handleSensorMessageSaving(deviceIdOrName, txt);
+    }
 
-        for (String tx : txt.split(",")) {
-            DateTime tem = MagmaTime.now();
-            String flag;
-            //TODO:Have to Change this is Topic
-            if (tx.contains("|")) {
-                flag = "1";
-                //DT:0|0-T:30
-                //DC|0-CT:10
-                //DT:1231253|0-T:25.63
-                String[] data = tx.split("\\|");
-                tx = data[1];
+    private void handleSensorMessageSaving(String deviceId, String txt) {
+        DateTime time1 = MagmaTime.now();
+        String[] sensorDataArray = txt.split(";");
 
-                String[] conf = data[0].split(":", 2);
-                switch (conf[0].trim()) {
-                    default:
-                        LOGGER.debug("Some other format : {} Received : {}, Device : {}", conf[0], tx, deviceId);
-
-                }
-            } else {
-                flag = "0"; //Real Time
-            }
-            DateTime time = tem;
-
-            if (time.isAfter(MagmaTime.now())) {
-                LOGGER.error("Future Date : {}, Device : {}", time, deviceId);
-                return;
+        for (int index = 0; index < sensorDataArray.length; index++) {
+            String tx = sensorDataArray[index];
+            if (tx.isEmpty()) {
+                continue;
             }
 
-            Map<Integer, Sensor> sensorMap = new HashMap<>();
-            for (String sensorData : tx.split(";")) { //1-T:30;2-H:30
+            String[] locTem = tx.split(":");
+            String sensor = locTem[0];
+            String value = locTem[1];
 
-                String[] sens = sensorData.split("-", 2);//1-T:30
-                String[] tmp = sens[1].split(":"); //T:30
-
-                Integer sensorNumber = Integer.parseInt(sens[0]);
-                String code = tmp[0];
-
-                String stringValue = tmp[1];
-
-                LOGGER.debug("code: {}, sens stringValue: {}, ", code, stringValue);
-                switch (code) {
-                    default:
-                        DateTime time1 = null;
-                        LOGGER.debug("sensor to save: {}, {}, {}", deviceId, code, stringValue);
-                        if(azureTime != null) {
-                            time1 = azureTime;
-                        } else{
-                            time1 = time;
-                        }
-                        Sensor sensor = sensorRepository.save(new Sensor(deviceId, sensorNumber, code, time1, stringValue, device.getShiftMap().get(sensorNumber), flag));
-                        LOGGER.debug("saved sensor: {}", sensor);
-                        sensorMap.put(sensorNumber, sensor);
-                }
+            SensorCode sensorCode = sensorCodeRepository.findOne(sensor);
+            if (sensorCode == null) {
+                SensorCode newSensorCode = new SensorCode();
+                newSensorCode.setCode(sensor.toUpperCase());
+                newSensorCode.setCodeValue(sensor);
+                sensorCodeRepository.save(newSensorCode);
+                sensorCode = newSensorCode;
             }
-            dataTriggerService.triggerForDeviceMaintenanceMap(deviceMaintenanceMap);
-            device.getSensorMap().putAll(sensorMap);
-            device.setLastSeen(time);
-            deviceRepository.save(device);
 
+            Sensor sensorEntity = new Sensor(deviceId, index, sensorCode.getCode(), time1, value);
+            sensorRepository.save(sensorEntity);
         }
     }
 
-    private Double shift(Map<Integer, Shift> shiftMap, Integer number, Double value) {
+    public void doHandleActuators(String deviceId, String txt, DateTime time) {
 
-        if (shiftMap == null) {
-            return value;
+        Device device = deviceRepository.findOne(deviceId);
+
+        if (device == null) {
+            LOGGER.error("No Device Found with Device Id : {}", deviceId);
+            return;
         }
 
-        Shift shift = shiftMap.get(number);
-        if (shift == null) {
-            return value;
+        device.setLastRawActuatorData(txt);
+        deviceRepository.save(device);
+
+        Kit kit = kitRepository.findByDevices(deviceId);
+
+        if (kit == null) {
+            //TODO: Have to Store Device Data Even Kit Not Created
+            LOGGER.error("No Kit Found with Device Id : {}", deviceId);
+            return;
         }
 
-        Double piv = shift.getMeta().get("pivot");
-        switch (shift.getOperation()) {
-            case ADD:
-                value += piv;
-                break;
-            case SUB:
-                value -= piv;
-                break;
-            case MUL:
-                value *= piv;
-                break;
-            case DIV:
-                value /= piv;
-                break;
+        DateTime now = MagmaTime.now();
+        Integer offset = kit.getOffsetMap().get(deviceId).getActuator();
+        String kitId = kit.getId();
+        KitModel kitModel = kit.getModel();
+
+        if (device.getGroup() != null) {
+            LOGGER.debug("Group :IR: {}, Actuator of Kit : {}, Device : {}, Message : {}", device.getGroup(), kitId, deviceId, txt);
+        } else {
+            LOGGER.debug("Actuator of Kit : {}, Device : {}, Message : {}", kitId, deviceId, txt);
         }
-        return value;
+
+        handleActuatorMessageSaving(device, txt, time);
+    }
+
+    private void handleActuatorMessageSaving(Device device, String txt, DateTime time) {
+        // TODO
+        throw new UnsupportedOperationException("Unimplemented method 'handle Actuator Message Saving'");
     }
 
     public Map<String, String> getRLL(String[] locTem, Map<String, String> relativeLocation) {
