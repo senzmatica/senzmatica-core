@@ -139,9 +139,11 @@ public class ProductApi {
 
     // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION ----------------------------------------
 
-    @RequestMapping(value = "/core/product/productType", method = RequestMethod.POST)
-    public MagmaResponse<ProductType> addNewProductType(@RequestBody @Valid ProductTypeDTO productTypeDTO,
-                                                        BindingResult result) {
+    @RequestMapping(value = "/core/product/productType", method = RequestMethod.POST,
+                    consumes = {"multipart/form-data"})
+    public MagmaResponse<ProductType> addNewProductType(@RequestPart("productTypeDTO") @Valid ProductTypeDTO productTypeDTO,
+                                                        @RequestPart(value = "binFile", required = false) MultipartFile binFile, BindingResult result) {
+
         if (result.hasErrors()) {
             throw new BadRequestException(result.getAllErrors());
         }
@@ -153,9 +155,12 @@ public class ProductApi {
         return new MagmaResponse<>(productService.getOneProductTypeById(productTypeId));
     }
 
-    @RequestMapping(value = "/core/product/productType/{productTypeId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/core/product/productType/{productTypeId}", 
+                    method = RequestMethod.PUT, 
+                    consumes = {"multipart/form-data"})
     public MagmaResponse<ProductType> updateProductType(@PathVariable("productTypeId") String productTypeId,
-                                                        @RequestBody @Valid ProductTypeDTO newProductTypeDTO) {
+                                                        @RequestPart("productTypeDTO") @Valid ProductTypeDTO newProductTypeDTO,
+                                                        @RequestPart(value = "binFile", required = false) MultipartFile binFile) {
         return new MagmaResponse<>(productService.updateProductType(productTypeId, newProductTypeDTO));
     }
 
