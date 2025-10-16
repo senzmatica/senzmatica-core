@@ -10,6 +10,8 @@ public interface SensorCodeRepository extends MongoRepository<SensorCode, String
 
     SensorCode findByCode(String code);
 
+    SensorCode findByCodeValue(String codeValue);
+
     List<SensorCode> findByReferenceId(String referenceId);
 
     boolean existsByCode(String code);

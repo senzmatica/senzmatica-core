@@ -95,6 +95,8 @@ public class DeviceDTO {
 
     private String referenceId;
 
+    private String productVersion;
+
     private UpdateStatus lastUpdateStatus;
 
     private DateTime lastSeen;
@@ -362,6 +364,14 @@ public class DeviceDTO {
         this.referenceId = referenceId;
     }
 
+    public String getProductVersion(){
+        return this.productVersion;
+    }
+
+    public void setProductVersion(String productVersion){
+        this.productVersion=productVersion;
+    }
+
     public void setLastUpdateStatus(UpdateStatus lastUpdateStatus){
         this.lastUpdateStatus=lastUpdateStatus;
     }
@@ -402,6 +412,7 @@ public class DeviceDTO {
                 ", deviceParameterConfiguration=" + deviceParameterConfiguration +
                 ", magmaCodecId='" + magmaCodecId + '\'' +
                 ", referenceId='" + referenceId + '\'' +
+                ", productVersion='" + productVersion + '\'' +
                 '}';
     }
 

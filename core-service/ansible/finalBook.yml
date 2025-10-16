@@ -1,0 +1,292 @@
+- hosts: "{{ server_name }}"
+  become: yes
+  gather_facts: false
+  vars_files:
+    - ansible-properties.yml
+
+  vars:
+    - user: senzmate
+    - pwd: senzmate
+    - verMQRpmUrl: https://github.com/vernemq/vernemq/releases/download/1.12.6/vernemq-1.12.6.rocky9.x86_64.rpm
+    - verneMQRpm: vernemq-1.12.6.rocky9.x86_64.rpm
+
+    - certbot_mail_address: Need Working mail address to obtain SSL Certificates
+    - domain: Needs Domain to Obtain SSL (Bare Ip not enough-to obtain SSL C)
+
+    - serviceLocal: ./magma-core.service
+    - nginxConfLocal: ./nginx.conf
+    - testJARLocal: ../target/core-service-5.1.0.0.jar
+
+    
+
+    - serviceName: magma-core.service
+
+    - installVernMq: false
+
+  tasks:
+    #### Create user with root access ######
+    - name: Create a New user and copy public key to remote host [It's Takes public key of the local host that runs playbook]
+      block:
+        - name: Create a user with root permissions
+          user:
+            name: "{{ user }}"
+            password: "{{ pwd | password_hash('sha512') }}"
+            groups:
+              - wheel
+            state: present
+
+        - name: Add public key to authorized_keys
+          authorized_key:
+            user: "{{ user }}"
+            state: present
+            key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+        - name: Alter /home/user folder permission to 755 or rwxr-xr-x
+          file:
+            path: "/home/{{user}}"
+            state: directory
+            owner: "{{user}}"
+            mode: '0755'
+
+    ########  Create Download folder to hold Rpm files and JARs######################
+    - name: Create Download Folder inside user home directory with 755
+      file:
+        path: "/home/{{user}}/downloads"
+        state: directory
+        owner: "{{user}}"
+        mode: '0755'
+
+    ########  Download and Install Java ######################
+
+    - name: Ensure Java 1.8.0 OpenJDK is installed
+      dnf:
+        name: java-1.8.0-openjdk
+        state: present
+
+    ########  Install MongoDB ######################
+    - name: Download, Configure, and Install MongoDB
+      block:
+        - name: Adding the MongoDB Repository
+          copy:
+            content: |
+              [mongodb-org-5.0]
+              name=MongoDB Repository
+              baseurl=https://repo.mongodb.org/yum/redhat/8/mongodb-org/5.0/x86_64/
+              gpgcheck=1
+              enabled=1
+              gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc
+            dest: /etc/yum.repos.d/mongodb-org.repo
+
+        - name: Install MongoDB
+          dnf:
+            name: mongodb-org
+            state: present
+
+
+   #########  Install VerneMQ and modify config #####################
+    - name: Install and Configure VerneMQ
+      block:
+        - name: Download VernMQ
+          get_url:
+            url: "{{verMQRpmUrl}}"
+            dest: "/home/{{user}}/downloads"
+
+
+        - name: Install VernMQ rpm from a local file
+          command: "yum install /home/{{user}}/downloads/vernemq-1.12.6.rocky9.x86_64.rpm -y"
+
+
+        - name: configure the mqtt listeners with server IP and port 1883
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^listener.tcp.default^'
+            line: listener.tcp.default = 0.0.0.0:1883
+
+        - name: configure the mqtt listeners with server IP and port 1883
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^listener.ws.default^'
+            line: listener.ws.default = 127.0.0.1:8000
+
+        - name: edit verneMQ config
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^accept_eula = no'
+            line: accept_eula = yes
+
+        - name: vmq_diversity plugin needs  enabled to handle DB drivers
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^plugins.vmq_diversity = off'
+            line: plugins.vmq_diversity = on
+
+        - name: Disable vmq_passwd in Config
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^plugins.vmq_passwd = on'
+            line: plugins.vmq_passwd = off
+
+        - name: Disable vmq_acl in Config
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^plugins.vmq_acl = on'
+            line: plugins.vmq_acl = off
+
+        - name: Enable Auth Mongo DB
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^vmq_diversity.auth_mongodb.enabled = off'
+            line: vmq_diversity.auth_mongodb.enabled = on
+
+        - name: Enable Mongo db local host enable
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^## vmq_diversity.mongodb.host = localhost'
+            line: vmq_diversity.mongodb.host = localhost
+
+        - name: Auth databse configuration
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '^## vmq_diversity.mongodb.database = '
+            line: vmq_diversity.mongodb.database = magma-core
+
+
+        - name: Enable MongoDB Port
+          lineinfile:
+            path: /etc/vernemq/vernemq.conf
+            regexp: '## vmq_diversity.mongodb.port = 27017'
+            line: vmq_diversity.mongodb.port = 27017
+
+        - name: make sure VerneMQ is started
+          service: name=vernemq state=started enabled=yes
+
+      when: vernmq
+
+ 
+    ######### Install and Configure firewalld #####################
+    - name: Install Firewall and configure zone and ports
+      block:
+        - name: Install firewalld if not installed
+          dnf:
+            name: firewalld
+            state: present
+
+        - name: Ensure firewalld is started
+          service:
+            name: firewalld
+            state: started
+            enabled: yes
+
+        - name: Permit traffic in default-zone(Public) for https service
+          firewalld:
+            service: https
+            permanent: yes
+            state: enabled
+
+        - name: Permit traffic in default-zone(Public) for http service
+          firewalld:
+            service: http
+            permanent: yes
+            state: enabled
+
+        - name: FirewallD port rules
+          firewalld:
+            permanent: yes
+            immediate: yes
+            port: "{{item.port}}/{{item.proto}}"
+            state: "{{item.state}}"
+            zone: "{{item.zone}}"
+          with_items:
+            - { port: "9044", proto: "tcp", state: "enabled", zone: "public" }
+            - { port: "27017", proto: "tcp", state: "disabled", zone: "public" }
+            - { port: "1883", proto: "tcp", state: "enabled", zone: "public" }
+            - { port: "80", proto: "tcp", state: "enabled", zone: "public" }
+            - { port: "8000", proto: "tcp", state: "disabled", zone: "public" }
+            
+        - name: Reload service firewalld
+          systemd:
+            name: firewalld
+            state: reloaded
+
+
+
+
+    ######### Install nginx and Obtain SSL #####################
+    - name: Install Nginx, Copy configuration from local machine and Obtain SSL
+      block:
+        - name: Adding the EPEL Software Repository
+          yum:
+            name: epel-release
+            state: present
+
+        - name: Installing Nginx if not Installed
+          yum:
+            name: nginx
+            state: present
+
+        - name: Ensure nginx is started
+          service: name=nginx state=started enabled=yes
+
+        ######### Install Certbot and Nginx Plugin #####################
+        - name: Ensure EPEL repository is installed
+          dnf:
+            name: epel-release
+            state: present
+
+        - name: Install the Certbot Lets Encrypt Client and Nginx Plugin
+          dnf:
+            name: certbot
+            state: present
+
+        - name: Install certbot-nginx plugin
+          dnf:
+            name: python3-certbot-nginx
+            state: present
+
+
+        - name: Edit Nginx Config to Support Java Application
+          copy:
+            src: "{{nginxConfLocal}}"
+            dest: /etc/nginx/nginx.conf
+
+        #         To Obtain SSL
+#        - name: Create and Install Cert Using Nginx Plugin
+#          command: "certbot --nginx -d  {{domain}} -d {{domain}} -m {{certbot_mail_address}} --agree-tos --noninteractive --redirect"
+#          when: false
+
+
+        ######### Copy Jar to remote host and  Create .Service to manage JAR #####################
+        - name: Copy Local Jar to Remote host and Manage that as system service
+          block:
+            - name: Copy Jarfile to /home/user/downloads
+              copy:
+                src: "{{testJARLocal}}"
+                dest: "/home/{{user}}/downloads"
+
+            - name: Copy Local .service file to Remote's /etc/systemd/system
+              copy:
+                src: "{{serviceLocal}}"
+                dest: "/etc/systemd/system"
+
+            - name: Reload systemd so that it knows of the new application added
+              ansible.builtin.systemd:
+                daemon_reload: yes
+
+            - name: If already run, then stop to run the new JAR
+              ansible.builtin.systemd:
+                name: "{{serviceName}}"
+                state: stopped
+
+            - name: Starts newly added service [.service] | Ensure .service is Running
+              ansible.builtin.systemd:
+                state: started
+                name: "{{serviceName}}"
+
+        ## Restart Nginx after all Process is done####
+        - name: Restart service nginx, in all cases
+          ansible.builtin.systemd:
+            name: nginx
+            state: restarted
+
+
+   

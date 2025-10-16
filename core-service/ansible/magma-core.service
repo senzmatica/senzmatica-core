@@ -1,0 +1,14 @@
+[Unit]
+Description=Magma core Service
+
+[Service]
+WorkingDirectory=/home/senzmate/downloads
+ExecStart=/usr/bin/java -jar core-service-5.1.0.0.jar
+User=senzmate
+Type=simple
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+

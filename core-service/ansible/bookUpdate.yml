@@ -1,0 +1,50 @@
+- hosts: "{{ server_name }}"
+  become: yes
+  gather_facts: false
+  vars_files:
+    - ansible-properties.yml
+  vars:
+    - user: senzmate
+    - pwd: senzmate
+
+    - certbot_mail_address: Need Working mail address to obtain SSL Certificates
+    - domain: Needs Domain to Obtain SSL (Bare Ip not enough-to obtain SSL C)
+
+    - serviceLocal: ./magma-core.service
+    - testJARLocal: ../target/core-service-5.1.0.0.jar
+    - serviceName: magma-core.service
+
+  tasks:
+    ######### Copy Jar to remote host and  Create .Service to manage JAR #####################
+    - name: Copy Local Jar to Remote host and Manage that as system service
+      block:
+        - name: Copy Jarfile  to /home/user/downloads
+          copy:
+            src: "{{testJARLocal}}"
+            dest: "/home/{{user}}/downloads"
+
+        - name: Copy Local .service file to Remote's /etc/systemd/system
+          copy:
+            src: "{{serviceLocal}}"
+            dest: "/etc/systemd/system"
+
+        - name: reload systemd so that it knows of the new application added
+          systemd:
+            daemon_reload: yes
+
+        - name: if already run ,then stop to run the new JAR]
+          ansible.builtin.systemd:
+            name: "{{serviceName}}"
+            state: stopped
+
+        - name: Starts Newly added service [.service] | Ensure .service is Running
+          ansible.builtin.systemd:
+            state: started
+            name: "{{serviceName}}"
+
+
+    ## Restart Nginx after all Process is done####
+    - name: Restart service nginx, in all cases
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

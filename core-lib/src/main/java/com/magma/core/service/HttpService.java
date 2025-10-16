@@ -1,6 +1,5 @@
 package com.magma.core.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.magma.core.data.dto.HttpAclAuthDTO;
 import com.magma.core.data.entity.Http_acl_auth;
@@ -11,30 +10,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class HttpService {
 
+    @Value("${server.port}")
+    private int serverPort;
+
     @Autowired
     Http_acl_authRepository http_acl_authRepository;
 
-    @Autowired
-    private HttpServletRequest request;
-
-    public String getBaseUrl() {
-        String baseUrl = request.getRequestURL().toString();
-        return baseUrl.substring(0, baseUrl.length() - request.getRequestURI().length()) + request.getContextPath();
-    }
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpService.class);
+
+    public String getBaseUrl() {
+        return "http://localhost:" + serverPort;
+    }
 
     public Http_acl_auth updateClient(String httpAclId, HttpAclAuthDTO updatedClientDTO) {
 
@@ -143,43 +143,57 @@ public class HttpService {
         return http_acl_authRepository.save(client);
     }
 
-    public Object getAccessToken(String httpAclId) {
-
+    //TODO need a way to get this directly from oauth service rather than api call
+    public Map<String, Object> getAccessToken(String httpAclId) {
         Http_acl_auth auth = http_acl_authRepository.findOne(httpAclId);
-
-        LOGGER.debug("Client ID : {}, for client  : {}", httpAclId, auth);
+        if (auth == null) {
+            LOGGER.error("No HTTP ACL row found for id {}", httpAclId);
+            throw new MagmaException(MagmaStatus.NOT_FOUND);
+        }
 
         try {
             RestTemplate restTemplate = new RestTemplate();
 
+            // Build URL with query params instead of form body
+            String url = String.format("%s/oauth/token?grant_type=%s&client_id=%s&client_secret=%s",
+                    getBaseUrl().replaceAll("/+$", ""),
+                    auth.getGrant_type(),
+                    auth.getClient_id(),
+                    auth.getClient_secret()
+            );
+
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
-            String clientId = auth.getClient_id();
-            String clientSecret = auth.getClient_secret();
+            HttpEntity<Void> req = new HttpEntity<>(headers);
 
-            String url = getBaseUrl() + "/oauth/token";
+            LOGGER.debug("Token getBaseUrl   : {}", getBaseUrl());
+            LOGGER.debug("Token endpoint URL   : {}", url);
+            LOGGER.debug("Token endpoint REQ   : {}", req);
 
-            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("grant_type", auth.getGrant_type());
-            body.add("client_id", clientId);
-            body.add("client_secret", clientSecret);
+            ResponseEntity<String> resp = restTemplate.exchange(
+                    url, HttpMethod.POST, req, String.class);
 
-            HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(body, headers);
+            LOGGER.debug("Token endpoint status: {}", resp.getStatusCode());
+            LOGGER.debug("Token endpoint body  : {}", resp.getBody());
 
-            LOGGER.debug("loginLocal Request: {}", httpEntity);
-            LOGGER.debug("loginLocal URL: {}", url);
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+                throw new MagmaException(MagmaStatus.ERROR);
+            }
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
-            LOGGER.debug("loginLocal StatusCode: {}", response.getStatusCode());
-            LOGGER.debug("loginLocal Response: {}", response.getBody());
+            // Parse JSON string -> Map
+            Map<String, Object> parsed = MAPPER.readValue(
+                    resp.getBody(),
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                    }
+            );
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode jsonRes = objectMapper.readTree(response.getBody());
+            return parsed;
 
-            return jsonRes;
+        } catch (MagmaException e) {
+            throw e;
         } catch (Exception e) {
-            LOGGER.debug("Error while getting token : {}", e);
+            LOGGER.error("Error while getting token for {}: {}", httpAclId, e.toString());
             throw new MagmaException(MagmaStatus.ERROR);
         }
     }

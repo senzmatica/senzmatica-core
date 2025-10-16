@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -197,7 +198,10 @@ public class ProductService {
         try {
             byte[] bytes = file.getBytes();
             Path path = Paths.get(binDir, file.getOriginalFilename());
-            java.nio.file.Files.write(path, bytes);
+            logger.debug("path:{}", path);
+
+            Files.createDirectories(path.getParent());
+            Files.write(path, bytes);
             version.setBinURL(binUrl.trim() + file.getOriginalFilename());
         } catch (IOException e) {
             logger.error("Exception in storing file in VM");
@@ -946,8 +950,8 @@ public class ProductService {
 
     // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION ----------------------------------------
 
-    public ProductType addOneProductType(ProductTypeDTO productTypeDto) {
-        if(productTypeDto.getActuatorCodes().length == 0 && productTypeDto.getSensorCodes().length == 0){
+    public ProductType addOneProductType(ProductTypeDTO productTypeDto, MultipartFile binFile) {
+        if (productTypeDto.getActuatorCodes().length == 0 && productTypeDto.getSensorCodes().length == 0) {
             throw new MagmaException(MagmaStatus.Sensor_Actuator_Not_Exist);
         }
         if (!productTypeDto.addValidate()) {
@@ -959,6 +963,12 @@ public class ProductService {
         }
         ProductVersion version=productTypeDto.getVersions().get(0);
         deviceParameterConfigurationUtil.validateParametersInRemoteConfiguration(version.getRemoteConfigurations());
+
+        if (binFile != null && !binFile.isEmpty()) {
+            validateBinFile(binFile);
+            saveFile(binFile, version); // set binURL inside this method
+            version.setFileName(binFile.getOriginalFilename());
+        }
 
         ProductType productType = new ProductType(productTypeDto.getProductName());
         BeanUtils.copyProperties(productTypeDto, productType);
@@ -1117,6 +1127,101 @@ public class ProductService {
 
         logger.debug("Setup Senzmatica : {}", setupSenzmatica);
         return setupSenzmatica;
+    }
+
+    public List<Device> findDevicesByProductTypeId(String productTypeId){
+        ProductType productType = productTypeRepository.findOne(productTypeId);
+        if(productType == null){
+            throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
+        }
+
+        return deviceRepository.findByProductProductId(productType.getId());
+    }
+
+    public List<Device> getUnassignedDevicesMatchingProductType(String productTypeId) {
+        ProductType productType = productTypeRepository.findOne(productTypeId);
+        if (productType == null) {
+            throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
+        }
+        List<String> sensorCodes = Arrays.stream(productType.getSensorCodes()).collect(Collectors.toList());
+        List<String> actuatorCodes = Arrays.stream(productType.getActuatorCodes())
+                .map(Enum::name)
+                .collect(Collectors.toList());
+        List<Device> devices = deviceRepository.findByProductIsNullAndSensorCodesInAndActuatorCodesIn(sensorCodes, actuatorCodes);
+
+        return devices.stream()
+                .filter(device -> device.getSensorCodes().length == sensorCodes.size() &&
+                        device.getActuatorCodes().length == actuatorCodes.size())
+                .collect(Collectors.toList());
+    }
+
+
+    public List<Device> addProductToDevice(String productTypeId,String productTypeVersion, List<String> deviceIds) {
+        ProductType productType = productTypeRepository.findOne(productTypeId);
+
+        if (productType != null) {
+            DeviceParameterConfiguration deviceParameterConfiguration = new DeviceParameterConfiguration();
+            deviceParameterConfiguration.setProductType(productType.getProductName());
+            ProductVersion retrievedVersion = productType.getVersions().stream()
+                                            .filter(version -> version.getVersionNum().equals(productTypeVersion))
+                                            .findFirst()
+                                            .orElse(null);
+            if(retrievedVersion != null){
+                deviceParameterConfiguration.setJoinParameters(retrievedVersion.getJoinParameters());
+                deviceParameterConfiguration.setRemoteConfigurations(retrievedVersion.getRemoteConfigurations());
+                deviceParameterConfiguration.setVersionNum(retrievedVersion.getVersionNum());
+            }
+            List<Device> devices = new ArrayList<>();
+            deviceIds.forEach(deviceId -> {
+                ProductData product = new ProductData();
+                product.setProductId(productType.getId());
+                product.setProductType(productType.getProductName());  // Can be updated in the future
+                product.setCurrentProductVersion(productTypeVersion);
+
+                List<String> availableVersionsInProduct = new ArrayList<>();
+                for (ProductVersion productVersion : productType.getVersions()) {
+                    if (!productVersion.getVersionNum().equals(productTypeVersion)) {
+                        availableVersionsInProduct.add(productVersion.getVersionNum());
+                    }
+                }
+                product.setAvailableProductVersions(availableVersionsInProduct.toString());
+                Device device = deviceRepository.findById(deviceId);
+                if (device == null) {
+                    throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
+                }
+                device.setProduct(product);
+                deviceParameterConfiguration.setDevice(deviceId);
+                device.setDeviceParameterConfiguration(deviceParameterConfiguration);
+                deviceRepository.save(device);
+                devices.add(device);
+            });
+            return devices;
+        }else{
+            throw new MagmaException(MagmaStatus.PRODUCT_TYPE_NOT_FOUND);
+        }
+    }
+
+    public String removeProductFromDevice(String productTypeId, String deviceId) {
+        Device device = deviceRepository.findById(deviceId);
+
+        if (device == null) {
+            throw new MagmaException(MagmaStatus.DEVICE_NOT_FOUND);
+        }
+
+        ProductData productData = device.getProduct();
+        if (productData != null && productTypeId.equals(productData.getProductId())) {
+            device.setProduct(null);
+            device.setProductType(null);
+            DeviceParameterConfiguration config = device.getDeviceParameterConfiguration();
+            if (config != null) {
+                config.setProductType(null);
+                config.setVersionNum(null);
+            }
+            deviceRepository.save(device);
+            return "Product removed from device successfully.";
+        } else {
+            throw new MagmaException(MagmaStatus.PRODUCT_NOT_FOUND);
+        }
     }
 }
 

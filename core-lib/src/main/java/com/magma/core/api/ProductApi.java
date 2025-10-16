@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
@@ -139,15 +140,14 @@ public class ProductApi {
 
     // -------------------------------------- SETUP SENZMATICA IMPLEMENTATION ----------------------------------------
 
-    @RequestMapping(value = "/core/product/productType", method = RequestMethod.POST,
-                    consumes = {"multipart/form-data"})
-    public MagmaResponse<ProductType> addNewProductType(@RequestPart("productTypeDTO") @Valid ProductTypeDTO productTypeDTO,
-                                                        @RequestPart(value = "binFile", required = false) MultipartFile binFile, BindingResult result) {
-
+    @RequestMapping(value = "/core/product/productType", method = RequestMethod.POST, consumes = "multipart/form-data")
+    public MagmaResponse<ProductType> addNewProductType(@RequestPart("productTypeDTO") @Valid @NotNull ProductTypeDTO productTypeDTO,
+                                                        @RequestPart(value = "binFile", required = false) MultipartFile binFile,
+                                                        BindingResult result) {
         if (result.hasErrors()) {
             throw new BadRequestException(result.getAllErrors());
         }
-        return new MagmaResponse<>(productService.addOneProductType(productTypeDTO));
+        return new MagmaResponse<>(productService.addOneProductType(productTypeDTO, binFile));
     }
 
     @RequestMapping(value = "/core/product/productType/{productTypeId}", method = RequestMethod.GET)
@@ -172,5 +172,28 @@ public class ProductApi {
     @RequestMapping(value = "/core/setupSenzmatica", method = RequestMethod.GET)
     public MagmaResponse<SetupSenzmatica> setupSenzmatica() {
         return new MagmaResponse<>(productService.getSetupSenzmaticaStatus());
+    }
+
+    @RequestMapping(value = "/core/product/productType/{productTypeId}/device" , method = RequestMethod.GET)
+    public MagmaResponse<List<Device>> findDevicesByProductTypeId(@PathVariable("productTypeId")String productId){
+        return new MagmaResponse<>(productService.findDevicesByProductTypeId(productId));
+    }
+
+    @RequestMapping(value = "/core/product/productType/{productTypeId}/deviceWithoutProduct" , method = RequestMethod.GET)
+    public MagmaResponse<List<Device>> getUnassignedDevicesMatchingProductType(@PathVariable("productTypeId")String productId){
+        return new MagmaResponse<>(productService.getUnassignedDevicesMatchingProductType(productId));
+    }
+
+    @RequestMapping(value = "/core/product/productType/{productTypeId}/device" , method = RequestMethod.PUT)
+    public MagmaResponse<List<Device>> addProductToDevice(@PathVariable("productTypeId")String productTypeId,
+                                                          @RequestParam("productTypeVersion")String productTypeVersion,
+                                                          @RequestBody List<String> deviceIds){
+        return new MagmaResponse<>(productService.addProductToDevice(productTypeId,productTypeVersion,deviceIds));
+    }
+
+    @RequestMapping(value="/core/product/productType/{productTypeId}/device/{deviceId}" , method = RequestMethod.DELETE)
+    public MagmaResponse<String> removeProductFromDevice(@PathVariable("productTypeId")String productTypeId,
+                                                         @PathVariable("deviceId")String deviceId){
+        return new MagmaResponse<>(productService.removeProductFromDevice(productTypeId,deviceId));
     }
 }

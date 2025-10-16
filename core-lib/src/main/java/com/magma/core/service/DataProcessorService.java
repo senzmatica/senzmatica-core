@@ -184,13 +184,18 @@ public class DataProcessorService {
             String sensor = locTem[0];
             String value = locTem[1];
 
-            SensorCode sensorCode = sensorCodeRepository.findOne(sensor);
+            SensorCode sensorCode = sensorCodeRepository.findByCodeValue(sensor);
+            Device device = deviceRepository.findOne(deviceId);
+            String[] sensorList = device.getSensorCodes();
+            
             if (sensorCode == null) {
-                SensorCode newSensorCode = new SensorCode();
-                newSensorCode.setCode(sensor.toUpperCase());
-                newSensorCode.setCodeValue(sensor);
-                sensorCodeRepository.save(newSensorCode);
-                sensorCode = newSensorCode;
+                LOGGER.error("No Sensor Code Found with Sensor Code Value : {}", sensor);
+                continue;
+            }
+            
+            if (sensorList != null && !Arrays.asList(sensorList).contains(sensorCode.getCode())) {
+                LOGGER.error("Sensor {} with Code : {} Not Assigned to Device Id : {}", sensor, sensorCode.getCode(), deviceId);
+                continue;
             }
 
             Sensor sensorEntity = new Sensor(deviceId, index, sensorCode.getCode(), time1, value);

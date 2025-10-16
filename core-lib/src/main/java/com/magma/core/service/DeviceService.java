@@ -94,7 +94,7 @@ public class DeviceService {
         if (deviceRepository.findOne(device.getId()) != null) {
             throw new MagmaException(MagmaStatus.DEVICE_ID_ALREADY_EXISTS);
         }
-        if (!deviceRepository.findByName(device.getName()).isEmpty()) {
+        if (deviceRepository.findByName(device.getName()) != null) {
             throw new MagmaException(MagmaStatus.DEVICE_NAME_ALREADY_EXISTS);
         }
 
@@ -140,7 +140,11 @@ public class DeviceService {
                 ProductData product = new ProductData();
                 product.setProductId(productTypes.getId());
                 product.setProductType(productTypes.getProductName()); // here for now product type is used in ProductData class. we may need to change that to productName in future
-                product.setCurrentProductVersion("0.0.0");
+                if (device.getProductVersion() != null) {
+                    product.setCurrentProductVersion(device.getProductVersion());
+                } else {
+                    product.setCurrentProductVersion("0.0.0");
+                }
                 List<String> availableVersionsInProduct = new ArrayList<>();
                 for (ProductVersion productVersion : productTypes.getVersions()) {
                     if (productVersion.getVersionNum().equals("0.0.0")) {
