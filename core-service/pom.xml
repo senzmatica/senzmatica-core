@@ -22,6 +22,8 @@
             <groupId>com.magma.util</groupId>
             <artifactId>util-service</artifactId>
             <version>1.0.0.5</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/../lib/util-service-1.0.0.5.jar</systemPath>
         </dependency>
 
         <dependency>
